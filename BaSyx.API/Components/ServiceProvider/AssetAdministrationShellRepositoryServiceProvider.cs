@@ -53,13 +53,13 @@ namespace BaSyx.API.Components
             AssetAdministrationShellServiceProviders = new Dictionary<string, IAssetAdministrationShellServiceProvider>();
         }
 
-        public void BindTo(IEnumerable<IAssetAdministrationShell> assetAdministrationShells)
+        public void BindTo(IEnumerable<IAssetAdministrationShell> boundElement)
         {
-            foreach (var assetAdministrationShell in assetAdministrationShells)
+            foreach (var assetAdministrationShell in boundElement)
             {
                 RegisterAssetAdministrationShellServiceProvider(assetAdministrationShell.Identification.Id, assetAdministrationShell.CreateServiceProvider(true));
             }
-            ServiceDescriptor = ServiceDescriptor ?? new AssetAdministrationShellRepositoryDescriptor(assetAdministrationShells, null);
+            ServiceDescriptor = ServiceDescriptor ?? new AssetAdministrationShellRepositoryDescriptor(boundElement, null);
         }
         public IEnumerable<IAssetAdministrationShell> GetBinding()
         {
