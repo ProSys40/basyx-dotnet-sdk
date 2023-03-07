@@ -52,13 +52,13 @@ namespace BaSyx.API.Components
             SubmodelServiceProviders = new Dictionary<string, ISubmodelServiceProvider>();
         }
 
-        public void BindTo(IEnumerable<ISubmodel> submodels)
+        public void BindTo(IEnumerable<ISubmodel> boundElement)
         {
-            foreach (var submodel in submodels)
+            foreach (var submodel in boundElement)
             {
                 RegisterSubmodelServiceProvider(submodel.Identification.Id, submodel.CreateServiceProvider());
             }
-            ServiceDescriptor = ServiceDescriptor ?? new SubmodelRepositoryDescriptor(submodels, null);
+            ServiceDescriptor = ServiceDescriptor ?? new SubmodelRepositoryDescriptor(boundElement, null);
         }
         public IEnumerable<ISubmodel> GetBinding()
         {
