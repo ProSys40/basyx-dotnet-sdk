@@ -9,7 +9,9 @@
 * SPDX-License-Identifier: EPL-2.0
 *******************************************************************************/
 using BaSyx.Models.Core.AssetAdministrationShell.Identification;
+using BaSyx.Models.Extensions;
 using BaSyx.Utils.ResultHandling;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 
@@ -34,6 +36,7 @@ namespace BaSyx.Models.Core.Common
         IResult Delete(TIdentifier id);
     }
 
+    [JsonConverter(typeof(ElementContainerConverter))]
     public interface IElementContainer<TElement> : ICrudContainer<string, TElement> where TElement : IReferable, IModelElement
     {
         TElement this[int i] { get; }

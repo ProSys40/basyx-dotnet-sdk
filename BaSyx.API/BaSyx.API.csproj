@@ -23,7 +23,12 @@
   </PropertyGroup>
   
   <ItemGroup>
+    <ProjectReference Include="..\BaSyx.Models.Export\BaSyx.Models.Export.csproj" />
     <ProjectReference Include="..\BaSyx.Models\BaSyx.Models.csproj" />
+    <ProjectReference Include="..\BaSyx.Utils.Client.Mqtt\BaSyx.Utils.Client.Mqtt.csproj" />
+    <ProjectReference Include="..\BaSyx.Utils.DependencyInjection.Abstractions\BaSyx.Utils.DependencyInjection.Abstractions.csproj" />
+    <ProjectReference Include="..\BaSyx.Utils.DependencyInjection\BaSyx.Utils.DependencyInjection.csproj" />
+    <ProjectReference Include="..\BaSyx.Utils\BaSyx.Utils.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -31,6 +36,11 @@
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ArangoDBNetStandard" Version="2.0.0" />
+    <PackageReference Include="Serilog.Settings.Configuration" Version="3.4.0" />
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">

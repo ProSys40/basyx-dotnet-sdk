@@ -23,10 +23,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		LICENSE-3RD-PARTY.txt = LICENSE-3RD-PARTY.txt
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Basyx.API.Tests", "tests\Basyx.API.Tests\Basyx.API.Tests.csproj", "{7EF88D79-BF8F-4284-97C3-37ABF14CF86B}"
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BaSyx.ServiceProvider.EventDriven", "BaSyx.ServiceProvider.EventDriven\BaSyx.ServiceProvider.EventDriven.csproj", "{5C944C9F-3A98-4030-914E-08F506A598A2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Basyx.API.Tests", "tests\Basyx.API.Tests\Basyx.API.Tests.csproj", "{7EF88D79-BF8F-4284-97C3-37ABF14CF86B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BaSyx.ServiceProvider.EventDriven.Tests", "tests\BaSyx.ServiceProvider.EventDriven.Tests\BaSyx.ServiceProvider.EventDriven.Tests.csproj", "{32E106DE-A000-43FE-B43D-7A3AB696C8EA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BaSyx.ServiceProvider.EventDriven", "BaSyx.ServiceProvider.EventDriven\BaSyx.ServiceProvider.EventDriven.csproj", "{5C944C9F-3A98-4030-914E-08F506A598A2}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BaSyx.ServiceProvider.EventDriven.Tests", "tests\BaSyx.ServiceProvider.EventDriven.Tests\BaSyx.ServiceProvider.EventDriven.Tests.csproj", "{32E106DE-A000-43FE-B43D-7A3AB696C8EA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

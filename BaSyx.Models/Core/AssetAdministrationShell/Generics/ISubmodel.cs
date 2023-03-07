@@ -9,11 +9,10 @@
 * SPDX-License-Identifier: EPL-2.0
 *******************************************************************************/
 using BaSyx.Models.Core.AssetAdministrationShell.Constraints;
-using BaSyx.Models.Core.AssetAdministrationShell.Generics;
 using BaSyx.Models.Core.AssetAdministrationShell.Identification;
 using BaSyx.Models.Core.AssetAdministrationShell.Semantics;
 using BaSyx.Models.Core.Common;
-using System.Collections.Generic;
+using Newtonsoft.Json;
 using System.Runtime.Serialization;
 
 namespace BaSyx.Models.Core.AssetAdministrationShell.Generics
@@ -28,7 +27,7 @@ namespace BaSyx.Models.Core.AssetAdministrationShell.Generics
         /// <summary>
         /// A submodel consists of zero or more submodel elements. 
         /// </summary>
-        [DataMember(EmitDefaultValue = false, IsRequired = false, Name = "submodelElements")]
+        [JsonProperty, DataMember(EmitDefaultValue = false, IsRequired = false, Name = "submodelElements")]
         IElementContainer<ISubmodelElement> SubmodelElements { get; }
     }
 }
