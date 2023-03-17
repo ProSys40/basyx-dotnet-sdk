@@ -68,6 +68,13 @@ namespace BaSyx.API.Clients
         IResult<List<T>> RetrieveAll();
 
         /// <summary>
+        /// Returns a List of all entries of a collection
+        /// </summary>
+        /// <param name="keys">List of keys for the entries to be retrieved</param>
+        /// <returns>If successful an IResult with a list of entries</returns>
+        IResult<List<T>> RetrieveMultiple(List<string> keys);
+
+        /// <summary>
         /// Deletes a specified Entry
         /// </summary>
         /// <param name="key">The key of the entry to be deleted</param>

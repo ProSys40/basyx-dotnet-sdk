@@ -14,28 +14,33 @@ using ArangoDBNetStandard.DocumentApi.Models;
 using BaSyx.Utils.ResultHandling;
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 
 namespace BaSyx.API.Clients;
 
 public class ArangoStorageClient<T> : StorageClient<T>
 {
-    private readonly AsyncArangoAPIWrapper _arangoAPI;
-    private readonly object _lock = new object();
+    private AsyncArangoAPIWrapper _arangoAPI;
+    public AsyncArangoAPIWrapper ArangoAPI { get { return _arangoAPI; } private set { _arangoAPI = value; } }
+    private readonly object _lock = new();
 
     public ArangoStorageClient(string storageName, string collectionName, AsyncArangoAPIWrapper arangoAPI) : base(storageName, collectionName)
     {
-        _arangoAPI = arangoAPI;
+        ArangoAPI = arangoAPI;
+        CreateStorageIfNotExists();
+        CreateCollectionIfNotExists();
+        Console.WriteLine(_arangoAPI.GetType());
     }
 
-    public override IResult<T> CreateOrUpdate(string key, T updateEntry)
+    public override IResult<T> CreateOrUpdate(string key, T entry)
     {
-        IResult<T> updateResult = Update(key, updateEntry);
-        if (updateResult != null)
-            return new Result<T>(true, updateResult.Entity);
-        IResult<T> createResult = Create(updateEntry);
-        if (createResult != null)
-            return new Result<T>(true, createResult.Entity);
+        IResult<T> updateResult = Update(key, entry);
+        if (updateResult.Success && updateResult != null)
+            return updateResult;
+        IResult<T> createResult = Create(key, entry);
+        if (createResult.Success && createResult != null)
+            return createResult;
         return new Result<T>(false);
     }
 
@@ -46,7 +51,7 @@ public class ArangoStorageClient<T> : StorageClient<T>
         {
             lock (_lock)
             {
-                updateResult = _arangoAPI.Update(_collectionName, key, updateEntry).Result;
+                updateResult = _arangoAPI.Update(_storageName, _collectionName, key, updateEntry).Result;
             }
             return new Result<T>(true, updateResult.New);
         }
@@ -56,14 +61,15 @@ public class ArangoStorageClient<T> : StorageClient<T>
         }
     }
 
-    private IResult<T> Create(T updateEntry)
+    private IResult<T> Create(string key, T entry)
     {
         PostDocumentResponse<T> createResult;
+        dynamic entryWithKey = InjectKey(entry, key);
         try
         {
             lock (_lock)
             {
-                createResult = _arangoAPI.Create(_collectionName, updateEntry).Result;
+                createResult = _arangoAPI.Create<dynamic, T>(_storageName, _collectionName, entryWithKey).Result;
             }
             return new Result<T>(true, createResult.New);
         }
@@ -73,6 +79,25 @@ public class ArangoStorageClient<T> : StorageClient<T>
         }
     }
 
+    private dynamic InjectKey(T entry, string key)
+    {
+        dynamic entryWithKey = new ExpandoObject();
+        entryWithKey = MapPropertiesToDynamicObject(entry, entryWithKey);
+
+        entryWithKey._key = key;
+        return entryWithKey;
+    }
+
+    private dynamic MapPropertiesToDynamicObject(T entry, dynamic dynObject)
+    {
+        var dynDict = (IDictionary<string, object>)dynObject;
+
+        foreach (var property in entry.GetType().GetProperties())
+            dynDict.Add(property.Name, property.GetValue(entry));
+
+        return dynObject;
+    }
+
     public override IResult Delete(string key)
     {
         DeleteDocumentResponse<T> deleteResult;
@@ -80,10 +105,10 @@ public class ArangoStorageClient<T> : StorageClient<T>
         {
             lock (_lock)
             {
-                deleteResult = _arangoAPI.Delete<T>(_collectionName, key).Result;
+                deleteResult = _arangoAPI.Delete<T>(_storageName, _collectionName, key).Result;
             }
 
-            return new Result(deleteResult.Old != null);
+            return new Result(true);
         }
         catch (Exception e)
         {
@@ -98,7 +123,7 @@ public class ArangoStorageClient<T> : StorageClient<T>
         {
             lock (_lock)
             {
-                deleteResult = _arangoAPI.DeleteCollection(_collectionName).Result;
+                deleteResult = _arangoAPI.DeleteCollection(_storageName, _collectionName).Result;
             }
 
             return new Result(true);
@@ -116,7 +141,7 @@ public class ArangoStorageClient<T> : StorageClient<T>
         {
             lock (_lock)
             {
-                deleteResult = _arangoAPI.DeleteDatabase(_collectionName).Result;
+                deleteResult = _arangoAPI.DeleteDatabase(_storageName).Result;
             }
             return new Result(true);
         }
@@ -133,7 +158,7 @@ public class ArangoStorageClient<T> : StorageClient<T>
         {
             lock (_lock)
             {
-                getResult = _arangoAPI.RetrieveCollection(_collectionName).Result;
+                getResult = _arangoAPI.RetrieveCollection(_storageName, _collectionName).Result;
             }
             return new Result<string>(true, getResult.Name);
         }
@@ -148,7 +173,7 @@ public class ArangoStorageClient<T> : StorageClient<T>
         GetCurrentDatabaseInfoResponse databeseInfoResult;
         lock (_lock)
         {
-            databeseInfoResult = _arangoAPI.RetrieveDatabaseInfo().Result;
+            databeseInfoResult = _arangoAPI.RetrieveDatabaseInfo(_storageName).Result;
         }
         return new Result<string>(true, databeseInfoResult.Result.Name);
     }
@@ -160,7 +185,7 @@ public class ArangoStorageClient<T> : StorageClient<T>
         {
             lock (_lock)
             {
-                entryResult = _arangoAPI.Retrieve<T>(_collectionName, key).Result;
+                entryResult = _arangoAPI.Retrieve<T>(_storageName, _collectionName, key).Result;
             }
             return new Result<T>(true, entryResult);
         }
@@ -177,7 +202,24 @@ public class ArangoStorageClient<T> : StorageClient<T>
         {
             lock (_lock)
             {
-                entriesResult = _arangoAPI.RetrieveAll<T>(_collectionName).Result;
+                entriesResult = _arangoAPI.RetrieveAll<T>(_storageName, _collectionName).Result;
+            }
+            return new Result<List<T>>(true, entriesResult);
+        }
+        catch (Exception e)
+        {
+            return new Result<List<T>>(e);
+        }
+    }
+
+    public override IResult<List<T>> RetrieveMultiple(List<string> keys)
+    {
+        List<T> entriesResult;
+        try
+        {
+            lock (_lock)
+            {
+                entriesResult = _arangoAPI.RetrieveMultiple<T>(_storageName, _collectionName, keys).Result;
             }
             return new Result<List<T>>(true, entriesResult);
         }
@@ -194,7 +236,7 @@ public class ArangoStorageClient<T> : StorageClient<T>
         {
             lock (_lock)
             {
-                createResult = _arangoAPI.CreateCollection(_collectionName).Result;
+                createResult = _arangoAPI.CreateCollection(_storageName, _collectionName).Result;
             }
             return new Result<string>(true, createResult.Name);
         }

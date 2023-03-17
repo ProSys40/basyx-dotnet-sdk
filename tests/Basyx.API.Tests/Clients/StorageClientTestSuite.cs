@@ -1,25 +1,18 @@
 ﻿using BaSyx.API.Clients;
-using BaSyx.Models.Core.AssetAdministrationShell.Generics;
-using BaSyx.Models.Core.AssetAdministrationShell.Identification;
+
 using BaSyx.Utils.ResultHandling;
-using Microsoft.VisualStudio.TestPlatform.ObjectModel;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Security;
-using System.Runtime.InteropServices.ObjectiveC;
-using System.Text;
-using System.Threading.Tasks;
+using Newtonsoft.Json;
+using Xunit.Sdk;
 
 namespace Basyx.API.Tests.Clients;
 
 public abstract class StorageClientTestSuite : IDisposable
 {
-    private readonly IStorageClient<object> storageClient;
+    private readonly IStorageClient<TestObject> storageClient;
 
     protected readonly string storageName = "teststorage";
     protected readonly string collectionName = "testcollection";
-    private Dictionary<string, object> entries = new();
+    private Dictionary<string, TestObject> entries = new();
 
     public StorageClientTestSuite()
     {
@@ -27,7 +20,7 @@ public abstract class StorageClientTestSuite : IDisposable
         storageClient = GetStorageClient();
     }
 
-    protected abstract IStorageClient<Object> GetStorageClient();
+    protected abstract IStorageClient<TestObject> GetStorageClient();
 
     protected void celanUpStorage()
     {
@@ -53,7 +46,7 @@ public abstract class StorageClientTestSuite : IDisposable
     }
 
     [Fact]
-    public void GetCollection()
+    public void GetCollectionName()
     {
         string expectedCollectionName = collectionName;
 
@@ -66,20 +59,26 @@ public abstract class StorageClientTestSuite : IDisposable
     public void CreateOrUpdateAndRetrieve()
     {
         var key = "test";
-        var testObject = new { test = "test" };
-        
+        TestObject testObject = new() { TestValue = "test" };
+
         entries.Add(key, testObject);
-        storageClient.CreateOrUpdate(key, entries[key]);
-        IResult<object> remoteTestObject = storageClient.Retrieve(key);
-
-        Assert.Equal(entries[key], remoteTestObject.Entity);
+        IResult<TestObject> createdTestObject = storageClient.CreateOrUpdate(key, entries[key]);
         
-        var updateTestObject = new { test = "update" };
-        entries[key] = updateTestObject;
-        storageClient.CreateOrUpdate(key, entries[key]);
-        IResult<object> remoteUpdatedObject = storageClient.Retrieve(key);
+        TestObject expected = entries[key];
+        TestObject actualCreated = createdTestObject.Entity;
+        Assert.Equal(expected, actualCreated);
 
-        Assert.Equal(entries[key], remoteUpdatedObject.Entity);
+        IResult<object> remoteTestObject = storageClient.Retrieve(key);
+        object actualRetrieved = remoteTestObject.Entity;
+        Assert.Equal(expected, actualRetrieved);
+
+        testObject.TestValue = "updateTest";
+        entries[key] = testObject;
+        storageClient.CreateOrUpdate(key, entries[key]);
+        IResult<TestObject> remoteUpdatedObject = storageClient.Retrieve(key);
+        TestObject updatedExpected = entries[key];
+        TestObject updatedActual = remoteUpdatedObject.Entity;
+        Assert.Equal(updatedExpected, updatedActual);
     }
 
     [Fact]
@@ -87,32 +86,52 @@ public abstract class StorageClientTestSuite : IDisposable
     {
         var key0 = "test0";
         var key1 = "test1";
-        var testObject0 = new { test = "test0" };
-        var testObject1 = new { test = "test1" };
+        TestObject testObject0 = new() { TestValue = "test0" };
+        TestObject testObject1 = new() { TestValue = "test1" };
         entries.Add(key0, testObject0);
         entries.Add(key1, testObject1);
         storageClient.CreateOrUpdate(key0, entries[key0]);
         storageClient.CreateOrUpdate(key1, entries[key1]);
 
-        List<Object> remoteEntries = storageClient.RetrieveAll().Entity;
-        entries.ToList().ForEach(entry => Assert.Contains(entry.Value, remoteEntries));
+        List<TestObject> expecteds = entries.ToList().Select(entry => entry.Value).ToList();
+        List<TestObject> actuals = storageClient.RetrieveAll().Entity;
+
+        expecteds.ForEach(entry => Assert.Contains(entry, actuals));
+    }
+
+    [Fact]
+    public void RetrieveMultiple()
+    {
+        var key0 = "test0";
+        var key1 = "test1";
+        TestObject testObject0 = new() { TestValue = "test0" };
+        TestObject testObject1 = new() { TestValue = "test1" };
+        entries.Add(key0, testObject0);
+        entries.Add(key1, testObject1);
+        storageClient.CreateOrUpdate(key0, entries[key0]);
+        storageClient.CreateOrUpdate(key1, entries[key1]);
+
+        List<TestObject> expecteds = entries.ToList().Select(entry => entry.Value).ToList();
+        List<TestObject> actuals = storageClient.RetrieveMultiple(entries.ToList().Select(entry => entry.Key).ToList()).Entity;
+
+        expecteds.ForEach(entry => Assert.Contains(entry, actuals));
     }
 
     [Fact]
     public void Delete()
     {
         var key = "test";
-        var testObject = new { test = "test" };
+        TestObject testObject = new() { TestValue = "test" };
 
         storageClient.CreateOrUpdate(key, testObject);
-        IResult<List<Object>> beforeDelete = storageClient.RetrieveAll();
+        IResult<List<TestObject>> beforeDelete = storageClient.RetrieveAll();
 
         Assert.Single(beforeDelete.Entity);
 
         IResult deleted = storageClient.Delete(key);
         Assert.True(deleted.Success);
 
-        IResult<List<Object>> afterDelete = storageClient.RetrieveAll();
+        IResult<List<TestObject>> afterDelete = storageClient.RetrieveAll();
         Assert.Empty(afterDelete.Entity);
     }
 }

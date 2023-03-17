@@ -25,7 +25,7 @@
   <ItemGroup>
     <PackageReference Include="ArangoDBNetStandard" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="5.0.1" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
   </ItemGroup>
   
   <ItemGroup>

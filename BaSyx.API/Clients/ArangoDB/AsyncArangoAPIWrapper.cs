@@ -13,23 +13,14 @@ using ArangoDBNetStandard.DatabaseApi.Models;
 using ArangoDBNetStandard.DocumentApi.Models;
 using ArangoDBNetStandard;
 using ArangoDBNetStandard.Transport.Http;
-using BaSyx.Utils.ResultHandling;
 using BaSyx.Utils.Settings.ArangoDB;
 using System;
 using System.Collections.Generic;
-using System.Runtime.Serialization;
 using System.Threading.Tasks;
 using ArangoDBNetStandard.DatabaseApi;
-using System.Reflection.Metadata.Ecma335;
+using System.Security.Cryptography;
+using ArangoDBNetStandard.CursorApi.Models;
 using System.Linq;
-using System.Runtime.InteropServices;
-using static BaSyx.API.Clients.AsyncArangoAPIWrapper;
-using BaSyx.Models.Core.AssetAdministrationShell.Generics;
-using BaSyx.Models.Core.AssetAdministrationShell.Identification;
-using ArangoDBNetStandard.Serialization;
-using BaSyx.Utils.DependencyInjection;
-using Microsoft.Extensions.Primitives;
-using System.Runtime.CompilerServices;
 
 namespace BaSyx.API.Clients;
 
@@ -110,9 +101,9 @@ public class AsyncArangoAPIWrapper
     /// returns the current database
     /// </summary>
     /// <returns></returns>
-    public async Task<GetCurrentDatabaseInfoResponse> RetrieveDatabaseInfo()
+    public async Task<GetCurrentDatabaseInfoResponse> RetrieveDatabaseInfo(string dbName)
     {
-        return await ArangoWorker<GetCurrentDatabaseInfoResponse>(async db => await db.Database.GetCurrentDatabaseInfoAsync());
+        return await ArangoWorker<GetCurrentDatabaseInfoResponse>(dbName, async db => await db.Database.GetCurrentDatabaseInfoAsync());
     }
 
     /// <summary>
@@ -132,9 +123,9 @@ public class AsyncArangoAPIWrapper
     /// </summary>
     /// <param name="collectionName"></param>
     /// <returns></returns>
-    public async Task<PostCollectionResponse> CreateCollection(string collectionName)
+    public async Task<PostCollectionResponse> CreateCollection(string dbName, string collectionName)
     {
-        return await ArangoWorker<PostCollectionResponse>(async dbClient =>
+        return await ArangoWorker<PostCollectionResponse>(dbName, async dbClient =>
         {
             var body = new PostCollectionBody()
             {
@@ -149,30 +140,30 @@ public class AsyncArangoAPIWrapper
     /// returns all available collections
     /// </summary>
     /// <returns></returns>
-    public async Task<GetCollectionsResponse> RetrieveAllCollections()
+    public async Task<GetCollectionsResponse> RetrieveAllCollections(string dbName)
     {
-        return await ArangoWorker<GetCollectionsResponse>(async dbClient => await dbClient.Collection.GetCollectionsAsync());
+        return await ArangoWorker<GetCollectionsResponse>(dbName, async dbClient => await dbClient.Collection.GetCollectionsAsync());
     }
 
-    public async Task<GetCollectionResponse> RetrieveCollection(string collectionName)
+    public async Task<GetCollectionResponse> RetrieveCollection(string dbName, string collectionName)
     {
-        return await ArangoWorker<GetCollectionResponse>(async dbClient => await dbClient.Collection.GetCollectionAsync(collectionName));
+        return await ArangoWorker<GetCollectionResponse>(dbName, async dbClient => await dbClient.Collection.GetCollectionAsync(collectionName));
     }
 
     /// <summary>
     /// Creates a systemClient entry
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="T"></typeparam> The expected return type
+    /// <typeparam name="U"></typeparam> The type of the entry
     /// <param name="collectionName"></param>
     /// <param name="document"></param>
     /// <returns></returns>
-    public async Task<PostDocumentResponse<T>> Create<T>(string collectionName, T document)
+    public async Task<PostDocumentResponse<T>> Create<U, T>(string dbName, string collectionName, U document)
     {
         var query = new PostDocumentsQuery();
         query.Overwrite = true;
         query.ReturnNew = true;
-
-        return await ArangoWorker<PostDocumentResponse<T>>(async dbClient => await dbClient.Document.PostDocumentAsync<T>(collectionName, document, query));
+        return await ArangoWorker<PostDocumentResponse<T>>(dbName, async dbClient => await dbClient.Document.PostDocumentAsync<U, T>(collectionName, document, query));
     }
 
     /// <summary>
@@ -183,11 +174,11 @@ public class AsyncArangoAPIWrapper
     /// <param name="documentKey"></param>
     /// <param name="updateObject"></param>
     /// <returns></returns>
-    public async Task<PutDocumentResponse<T>> Update<T>(string collectionName, string documentKey, T updateObject)
+    public async Task<PutDocumentResponse<T>> Update<T>(string dbName, string collectionName, string documentKey, T updateObject)
     {
         var query = new PutDocumentQuery();
         query.ReturnNew = true; 
-        return await ArangoWorker<PutDocumentResponse<T>>(async dbClient => await dbClient.Document.PutDocumentAsync<T>(collectionName, documentKey, updateObject, query));
+        return await ArangoWorker<PutDocumentResponse<T>>(dbName, async dbClient => await dbClient.Document.PutDocumentAsync<T>(collectionName, documentKey, updateObject, query));
     }
 
     /// <summary>
@@ -199,25 +190,45 @@ public class AsyncArangoAPIWrapper
     /// <param name="documentKey"></param>
     /// <param name="patchObject"></param>
     /// <returns></returns>
-    public async Task<PatchDocumentResponse<U>> Patch<T, U>(string collectionName, string documentKey, T patchObject)
+    public async Task<PatchDocumentResponse<U>> Patch<T, U>(string dbName, string collectionName, string documentKey, T patchObject)
     {
-        return await ArangoWorker<PatchDocumentResponse<U>>(async dbClient => await dbClient.Document.PatchDocumentAsync<T, U>(collectionName, documentKey, patchObject));
+        return await ArangoWorker<PatchDocumentResponse<U>>(dbName, async dbClient => await dbClient.Document.PatchDocumentAsync<T, U>(collectionName, documentKey, patchObject));
     }
 
-    public async Task<DeleteCollectionResponse> DeleteCollection(string collectionName)
+    public async Task<DeleteCollectionResponse> DeleteCollection(string dbName, string collectionName)
     {
-        return await ArangoWorker<DeleteCollectionResponse>(async db => await db.Collection.DeleteCollectionAsync(collectionName));
+        return await ArangoWorker<DeleteCollectionResponse>(dbName,  async db => await db.Collection.DeleteCollectionAsync(collectionName));
     }
 
     /// <summary>
     /// Returns all entries from the given collection
     /// </summary>
     /// <typeparam name="T"></typeparam>
+    /// <param name="dbName"></param>
     /// <param name="collectionName"></param>
     /// <returns></returns>
-    public async Task<List<T>> RetrieveAll<T>(string collectionName)
+    public async Task<List<T>> RetrieveAll<T>(string dbName, string collectionName)
     {
-        return await ArangoWorker<List<T>>(async db => await db.Document.GetDocumentsAsync<T>(collectionName, null));
+        var response = await ArangoWorker<CursorResponse<T>>(dbName, async db => await db.Cursor.PostCursorAsync<T>(
+            @$"FOR doc IN {collectionName} 
+            RETURN doc")
+        );
+
+        List<T> result = new List<T>();
+        return response.Result.AsEnumerable().ToList();
+    }
+
+    /// <summary>
+    /// Returns all entries from the given collection
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="dbName"></param>
+    /// <param name="collectionName"></param>
+    /// <param name="keys"></param>
+    /// <returns></returns>
+    public async Task<List<T>> RetrieveMultiple<T>(string dbName, string collectionName, List<string> keys)
+    {
+        return await ArangoWorker<List<T>>(dbName, async db => await db.Document.GetDocumentsAsync<T>(collectionName, keys));
     }
 
     /// <summary>
@@ -227,8 +238,8 @@ public class AsyncArangoAPIWrapper
     /// <param name="collectionName"></param>
     /// <param name="key"></param>
     /// <returns></returns>
-    public async Task<T> Retrieve<T>(string collectionName, string key) {
-        return await ArangoWorker<T>(async db => await db.Document.GetDocumentAsync<T>(collectionName, key));
+    public async Task<T> Retrieve<T>(string dbName, string collectionName, string key) {
+        return await ArangoWorker<T>(dbName, async db => await db.Document.GetDocumentAsync<T>(collectionName, key));
     }
 
     /// <summary>
@@ -238,9 +249,9 @@ public class AsyncArangoAPIWrapper
     /// <param name="collectionName"></param>
     /// <param name="documentKey"></param>
     /// <returns></returns>
-    public async Task<DeleteDocumentResponse<T>> Delete<T>(string collectionName, string documentKey)
+    public async Task<DeleteDocumentResponse<T>> Delete<T>(string dbName, string collectionName, string documentKey)
     {
-        return await ArangoBasicAuthWorker<DeleteDocumentResponse<T>>(async db => await db.Document.DeleteDocumentAsync<T>(collectionName, documentKey));
+        return await ArangoBasicAuthWorker<DeleteDocumentResponse<T>>(dbName, async db => await db.Document.DeleteDocumentAsync<T>(collectionName, documentKey));
     }
 
     private bool IsSetSysUserCredentials(ArangoDbConfiguration config)
@@ -255,7 +266,7 @@ public class AsyncArangoAPIWrapper
 
     private async Task<T> ArangoSystemWorker<T>(Func<DatabaseApiClient, Task<T>> func) => IsSetSysUserCredentials(_config) ? await ArangoSystemBasicAuthWorker<T>(func) : await ArangoSystemNoAuthWorker<T>(func);
 
-    private async Task<T> ArangoWorker<T>(Func<ArangoDBClient, Task<T>> func) => IsSetUserCredentials(_config) ? await ArangoBasicAuthWorker<T>(func) : await ArangoNoAuthWorker<T>(func);
+    private async Task<T> ArangoWorker<T>(string dbName, Func<ArangoDBClient, Task<T>> func) => IsSetUserCredentials(_config) ? await ArangoBasicAuthWorker<T>(dbName, func) : await ArangoNoAuthWorker<T>(dbName, func);
 
     private async Task<T> ArangoSystemBasicAuthWorker<T>(Func<DatabaseApiClient, Task<T>> func)
     {
@@ -275,18 +286,18 @@ public class AsyncArangoAPIWrapper
         }
     }
 
-    private async Task<T> ArangoBasicAuthWorker<T>(Func<ArangoDBClient, Task<T>> func)
+    private async Task<T> ArangoBasicAuthWorker<T>(string dbName, Func<ArangoDBClient, Task<T>> func)
     {
-        using (var transport = HttpApiTransport.UsingBasicAuth(generateHostUri(_config), _config.Database, _config.DbUser, _config.DbPassword))
+        using (var transport = HttpApiTransport.UsingBasicAuth(generateHostUri(_config), dbName, _config.DbUser, _config.DbPassword))
         {
             ArangoDBClient arangoClient = new ArangoDBClient(transport);
             return await func(arangoClient);
         }
     }
 
-    private async Task<T> ArangoNoAuthWorker<T>(Func<ArangoDBClient, Task<T>> func)
+    private async Task<T> ArangoNoAuthWorker<T>(string dbName, Func<ArangoDBClient, Task<T>> func)
     {
-        using (var transport = HttpApiTransport.UsingNoAuth(generateHostUri(_config), _config.Database))
+        using (var transport = HttpApiTransport.UsingNoAuth(generateHostUri(_config), dbName))
         {
             ArangoDBClient arangoClient = new ArangoDBClient(transport);
             return await func(arangoClient);
@@ -296,7 +307,7 @@ public class AsyncArangoAPIWrapper
 
     private Uri generateHostUri(ArangoDbConfiguration config)
     {
-        //TODO: supports https?
+        //TODO: Find out: supports https?
         return new Uri($"http://{config.Server}:{config.Port}");
     }
 }

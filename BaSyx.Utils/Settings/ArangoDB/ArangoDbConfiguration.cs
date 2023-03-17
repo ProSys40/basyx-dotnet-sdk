@@ -18,7 +18,6 @@ public class ArangoDbConfiguration
 {
     public string Server { get; set; }
     public string Port { get; set; }
-    public string Database { get; set; }
     public string DbUser { get; set; }
     public string DbPassword { get; set; }
     public string SysUser { get; set; }  

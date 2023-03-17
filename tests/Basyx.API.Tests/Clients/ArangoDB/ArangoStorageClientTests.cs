@@ -10,16 +10,15 @@ namespace Basyx.API.Tests.Clients.ArangoDB;
 
 public class ArangoStorageClientTests : StorageClientTestSuite
 {
-    protected override IStorageClient<object> GetStorageClient()
+    protected override IStorageClient<TestObject> GetStorageClient()
     {
-        ArangoDbConfiguration config = new ArangoDbConfiguration()
+        ArangoDbConfiguration config = new()
         {
             Port = "8529",
             Server = "localhost",
-            Database = "Hello_BaSyx"
         };
 
-        AsyncArangoAPIWrapper arangoAPI = new AsyncArangoAPIWrapper(config);
-        return new ArangoStorageClient<object>(storageName, collectionName, arangoAPI);
+        AsyncArangoAPIWrapper arangoAPI = new(config);
+        return new ArangoStorageClient<TestObject>(storageName, collectionName, arangoAPI);
     }
 }

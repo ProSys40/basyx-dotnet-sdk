@@ -28,15 +28,12 @@ namespace BaSyx.API.Clients
         {
             _storageName = storageName;
             _collectionName = collectionName;
-
-            CreateStorageIfNotExists();
-
-            CreateCollectionIfNotExists();
         }
 
         public abstract IResult<T> CreateOrUpdate(string key, T updateEntry);
         public abstract IResult<T> Retrieve(string key);
         public abstract IResult<List<T>> RetrieveAll();
+        public abstract IResult<List<T>> RetrieveMultiple(List<string> keys);
         public abstract IResult Delete(string key);
         
         public abstract IResult<string> GetStorageName();
@@ -48,32 +45,29 @@ namespace BaSyx.API.Clients
         protected abstract IResult<string> CreateStorage();
         protected abstract IResult<List<string>> GetStorageNames();
 
-        private void CreateStorageIfNotExists()
+        protected void CreateStorageIfNotExists()
         {
-            IResult<List<string>> storagesResult = GetStorageNames();
-            if (!storagesResult.Success && storagesResult.Entity != null)
-                throw new Exception("Could not laod storage names");
-
-            List<string> storages = storagesResult.Entity;
-            if (storageExists(storages))
+            if (storageExists())
                 return;
 
             CreateStorage();
         }
 
-        private bool storageExists(List<string> storages)
+        private bool storageExists()
         {
-            try
+            IResult<List<string>> storagesResult = GetStorageNames();
+            if (!storagesResult.Success && storagesResult.Entity != null)
+                throw new Exception("Could not laod storage names");
+
+            List<string> storageNames = storagesResult.Entity;
+            if (storageNames == null)
             {
-                return storages.Contains(_storageName);
-            } catch (Exception debug)
-            {
-                //not connected or storage does not exist
                 return false;
             }
+            return storageNames.Contains(_storageName);
         }
 
-        private void CreateCollectionIfNotExists()
+        protected void CreateCollectionIfNotExists()
         {
             IResult<string> collectionResult = GetCollection();
             if (collectionResult.Success && collectionResult.Entity.Equals(_collectionName))
