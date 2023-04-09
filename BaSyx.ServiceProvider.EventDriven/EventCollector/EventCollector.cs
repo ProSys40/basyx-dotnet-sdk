@@ -9,12 +9,15 @@
 // * SPDX-License-Identifier: EPL-2.0
 // *******************************************************************************/
 
-using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Microsoft.Extensions.Logging;
 
 namespace BaSyx.ServiceProvider.EventDriven.EventCollector;
 
+/// <summary>
+/// Base implementation for an generic event collector 
+/// </summary>
+/// <typeparam name="TEventData">Type of the event data collected</typeparam>
 public class EventCollectorBase<TEventData> : IEventCollector<TEventData>, IDisposable
 {
     private readonly ILogger<EventCollectorBase<TEventData>> _logger;
@@ -30,7 +33,11 @@ public class EventCollectorBase<TEventData> : IEventCollector<TEventData>, IDisp
 
     public void Register(IObservable<TEventData> observable)
     {
-        var subscription = observable.Subscribe(e => _combinedObservable.OnNext(e));
+        var subscription = observable.Subscribe(e =>
+        {
+            _logger.LogTrace("Received event from observable {@Event}", e);
+            _combinedObservable.OnNext(e);
+        });
         _registeredObservables.Add(observable, subscription);
         
         _logger.LogDebug("Registered new observable. Now tracking {ObservableCount} observables", 
@@ -80,5 +87,26 @@ public class EventCollectorBase<TEventData> : IEventCollector<TEventData>, IDisp
     {
         Dispose(true);
         GC.SuppressFinalize(this);
+    }
+}
+
+/// <summary>
+/// Collects events for submodels
+/// </summary>
+public class SubmodelEventCollector: EventCollectorBase<SubmodelEventData>
+{
+    public SubmodelEventCollector(ILogger<EventCollectorBase<SubmodelEventData>> logger) : base(logger)
+    {
+        
+    }
+}
+
+/// <summary>
+/// Collects events for asset administration shells
+/// </summary>
+public class AasEventCollector: EventCollectorBase<AssetAdministrationShellEventData>
+{
+    public AasEventCollector(ILogger<EventCollectorBase<AssetAdministrationShellEventData>> logger) : base(logger)
+    {
     }
 }

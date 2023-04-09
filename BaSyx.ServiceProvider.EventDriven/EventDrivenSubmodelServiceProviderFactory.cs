@@ -11,6 +11,7 @@
 
 using BaSyx.API.Components;
 using BaSyx.Models.Core.AssetAdministrationShell.Generics;
+using BaSyx.ServiceProvider.EventDriven.EventCollector;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -21,19 +22,30 @@ public class EventDrivenSubmodelServiceProviderFactory<TPersisting>: ISubmodelSe
 {
     private readonly ILogger<EventDrivenSubmodelServiceProviderFactory<TPersisting>> _logger;
     private readonly IServiceProvider _serviceProvider;
+    private readonly IEventCollector<SubmodelEventData>? _eventCollector;
 
 
     public EventDrivenSubmodelServiceProviderFactory(ILogger<EventDrivenSubmodelServiceProviderFactory<TPersisting>> logger, 
-        IServiceProvider serviceProvider)
+        IServiceProvider serviceProvider, IEventCollector<SubmodelEventData>? eventCollector = null)
     {
         _logger = logger;
         _serviceProvider = serviceProvider;
+        _eventCollector = eventCollector;
     }
 
     public ISubmodelServiceProvider CreateSubmodelServiceProvider(ISubmodel submodel)
     {
         var logger = _serviceProvider.GetRequiredService<ILogger<EventDrivenSubmodelServiceProvider<TPersisting>>>();
         var persisting = _serviceProvider.GetRequiredService<TPersisting>();
-        return new EventDrivenSubmodelServiceProvider<TPersisting>(logger, persisting, submodel);
+        var serviceProvider = new EventDrivenSubmodelServiceProvider<TPersisting>(logger, persisting, submodel);
+
+        if (_eventCollector != null)
+        {
+            _eventCollector.Register(serviceProvider.SubmodelEventObservable);
+            _logger.LogInformation("Registered new event driven submodel service provider for submodel {SubmodelId}",
+                submodel.Identification);
+        }
+        
+        return serviceProvider;
     }
 }

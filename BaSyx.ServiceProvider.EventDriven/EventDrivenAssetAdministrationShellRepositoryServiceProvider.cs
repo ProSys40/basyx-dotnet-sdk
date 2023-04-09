@@ -15,6 +15,7 @@ using BaSyx.API.Components;
 using BaSyx.Models.Connectivity.Descriptors;
 using BaSyx.Models.Core.AssetAdministrationShell.Generics;
 using BaSyx.Models.Core.Common;
+using BaSyx.ServiceProvider.EventDriven.EventCollector;
 using BaSyx.Utils.ResultHandling;
 using Microsoft.Extensions.Logging;
 
@@ -28,12 +29,18 @@ public class EventDrivenAssetAdministrationShellRepositoryServiceProvider<TPersi
     private readonly Subject<AssetAdministrationShellEventData> _aasEventSubject;
 
     public EventDrivenAssetAdministrationShellRepositoryServiceProvider(ILogger<EventDrivenAssetAdministrationShellRepositoryServiceProvider<TPersisting>> logger,
-        TPersisting persistingProvider)
+        TPersisting persistingProvider, IEventCollector<AssetAdministrationShellEventData>? eventCollector = null)
     {
         _logger = logger;
         _persistingProvider = persistingProvider;
+        var _eventCollector = eventCollector;
 
         _aasEventSubject = new Subject<AssetAdministrationShellEventData>();
+        if (_eventCollector != null)
+        {
+            _eventCollector.Register(_aasEventSubject);
+            _logger.LogInformation("Registered new event driven asset administration shell repository service provider with event collector");
+        }
     }
     
     private IEnumerable<IAssetAdministrationShell> AssetAdministrationShells => _persistingProvider.GetBinding();
