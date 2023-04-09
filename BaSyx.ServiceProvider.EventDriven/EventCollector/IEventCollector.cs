@@ -12,9 +12,17 @@
 namespace BaSyx.ServiceProvider.EventDriven.EventCollector;
 
 /// <summary>
+/// Non-generic interface for event collectors
+/// </summary>
+public interface IEventCollector
+{
+    
+}
+
+/// <summary>
 /// Collects events from the event driven AAS repositories
 /// </summary>
-public interface IEventCollector<TEventData>
+public interface IEventCollector<TEventData>: IEventCollector
 {
     /// <summary>
     /// Register the observable to be merged into the event stream
