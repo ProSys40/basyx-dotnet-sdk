@@ -34,3 +34,46 @@ public interface IEventMessageMapper<in TEvent, out TMessage>: IEventMessageMapp
     /// <returns>Message</returns>
     TMessage Map(TEvent eventData);
 }
+
+
+/// <summary>
+/// Extension methods for getting types of the mapper
+/// </summary>
+public static class IEventMessageMapperExtensions
+{
+    /// <summary>
+    /// Gets the input type of generic mappers
+    /// </summary>
+    // <param name="mapper">Mapper to get the input type for</param>
+    /// <returns>Null if no generic implementation. The input type otherwise.</returns>
+    public static Type? GetInputType(this IEventMessageMapper mapper)
+    {
+        var eventMapperInputType =
+            mapper.GetType().GetInterfaces()
+                .Where(t => t.IsGenericType)
+                .Where(t => t.IsAssignableTo(typeof(IEventMessageMapper)))
+                .Where(t => t.GenericTypeArguments.Length >= 2)
+                .Select(t => t.GenericTypeArguments[0])
+                .SingleOrDefault();
+
+        return eventMapperInputType;
+    }
+
+    /// <summary>
+    /// Gets the output type of generic mappers
+    /// </summary>
+    /// <param name="mapper">Mapper to get the output for</param>
+    /// <returns>Null if no generic implementation. The input type otherwise.</returns>
+    public static Type? GetOutputType(this IEventMessageMapper mapper)
+    {
+        var eventMapperInputType =
+            mapper.GetType().GetInterfaces()
+                .Where(t => t.IsGenericType)
+                .Where(t => t.IsAssignableTo(typeof(IEventMessageMapper)))
+                .Where(t => t.GenericTypeArguments.Length >= 2)
+                .Select(t => t.GenericTypeArguments[1])
+                .SingleOrDefault();
+
+        return eventMapperInputType;
+    }
+}
