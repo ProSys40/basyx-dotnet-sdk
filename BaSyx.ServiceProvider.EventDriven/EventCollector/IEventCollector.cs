@@ -9,6 +9,8 @@
 // * SPDX-License-Identifier: EPL-2.0
 // *******************************************************************************/
 
+using Microsoft.Extensions.Logging;
+
 namespace BaSyx.ServiceProvider.EventDriven.EventCollector;
 
 /// <summary>
