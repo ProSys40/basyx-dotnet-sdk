@@ -17,52 +17,46 @@ using BaSyx.Models.Core.Common;
 using BaSyx.Utils.ResultHandling;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Reflection.Metadata;
 
 namespace BaSyx.API.Clients;
 
 public class ArangoSubmodelRepositoryClient : ISubmodelRepositoryClient
 {
-    private readonly AsyncArangoAPIWrapper _storageClient;
+    private readonly ArangoStorageClient<ISubmodel> _storageClient;
 
-    public ArangoSubmodelRepositoryClient(AsyncArangoAPIWrapper storageClient)
+    public ArangoSubmodelRepositoryClient(ArangoStorageClient<ISubmodel> storageClient)
     {
         _storageClient = storageClient;
     }
 
     public IResult<ISubmodel> CreateOrUpdateSubmodel(ISubmodel submodel)
     {
-        SubmodelWithArangoKey arangoSubmodel = (SubmodelWithArangoKey)ArangoSubmodelFactory.Create(submodel);
-        var createSubmodelResponse = new object(); // _storageClient.CreateDocument<SubmodelWithArangoKey>(AsyncArangoAPIWrapper.SUBMODEL_COLLECTION, arangoSubmodel);
-
-
-        //IResult<ISubmodel> submodelResult = _storageClient.CreateDocument<ISubmodel>(ArangoAPIWrapper.SUBMODEL_COLLECTION, submodel);
-        //return submodelResult;
-        return null;
-        
-    }
-
-    private IResult<IElementContainer<ISubmodelElement>> HandleAssociations(IElementContainer<ISubmodelElement> submodelElements, ISubmodel submodel)
-    {
-        throw new NotImplementedException();
+        return _storageClient.CreateOrUpdate(submodel.Identification.Id, submodel);
     }
 
     public IResult DeleteSubmodel(string submodelId)
     {
-        return null;
-        //return _storageClient.Delete(submodelId);
+        return _storageClient.Delete(submodelId);
     }
 
     public IResult<ISubmodel> RetrieveSubmodel(string submodelId)
     {
-        return null;
-        //return _storageClient.Retrieve<ISubmodel>(submodelId);
+        return _storageClient.Retrieve(submodelId);
     }
 
     public IResult<IElementContainer<ISubmodel>> RetrieveSubmodels()
     {
+        IResult<List<ISubmodel>> result = _storageClient.RetrieveAll();
+
+        if (!result.Success)
+        {
+            return new Result<IElementContainer<ISubmodel>>(false);
+        }
+        ElementContainer <ISubmodel> submodels = new();
         return null;
-        //return _storageClient.RetrieveAll<IElementContainer<ISubmodel>>();
+
     }
 
 

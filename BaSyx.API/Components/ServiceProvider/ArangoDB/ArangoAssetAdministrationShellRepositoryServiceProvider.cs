@@ -16,74 +16,110 @@ using ArangoDBNetStandard.DocumentApi;
 using ArangoDBNetStandard.GraphApi;
 using ArangoDBNetStandard.TransactionApi;
 using ArangoDBNetStandard.UserApi;
+using BaSyx.API.AssetAdministrationShell.Extensions;
+using BaSyx.API.Clients;
+using BaSyx.API.Components.ServiceProvider;
 using BaSyx.Models.Connectivity.Descriptors;
 using BaSyx.Models.Core.AssetAdministrationShell.Generics;
+using BaSyx.Models.Core.AssetAdministrationShell.Implementations;
 using BaSyx.Models.Core.Common;
 using BaSyx.Utils.ResultHandling;
 using Microsoft.Extensions.Configuration;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Reflection;
 using System.Transactions;
 
 namespace BaSyx.API.Components;
 
-internal class ArangoAssetAdministrationShellRepositoryServiceProvider : IAssetAdministrationShellRepositoryServiceProvider
+public class ArangoAssetAdministrationShellRepositoryServiceProvider : AbstractAssetAdministrationShellRepositoryServiceProvider
 {
-    public IAssetAdministrationShellRepositoryDescriptor ServiceDescriptor => throw new System.NotImplementedException();
+    private readonly IAssetAdministrationShellServiceProviderFactory _assetAdministrationShellServiceProviderFactory = new ArangoAssetAdministrationShellServiceProviderFactory();
+    public IStorageClient<IAssetAdministrationShell> StorageClient { get; }
+    public override IAssetAdministrationShellRepositoryDescriptor ServiceDescriptor { get => throw new NotImplementedException(); protected set => throw new NotImplementedException(); }
 
-    public void BindTo(IEnumerable<IAssetAdministrationShell> element)
+    protected Dictionary<string, IAssetAdministrationShellServiceProvider> AssetAdministrationShellServiceProviders { get; }
+
+    public override IResult<IAssetAdministrationShell> CreateAssetAdministrationShell(IAssetAdministrationShell aas)
     {
-        throw new System.NotImplementedException();
+        if (aas == null)
+            return new Result<IAssetAdministrationShell>(new ArgumentNullException(nameof(aas)));
+
+        IAssetAdministrationShellServiceProvider assetAdministrationShellServiceProvider = CreateServiceProvider(aas, true);
+        this.RegisterAssetAdministrationShellServiceProvider(aas.Identification.Id, assetAdministrationShellServiceProvider);
+        return this.StorageClient.CreateOrUpdate(aas.Identification.Id, aas);
     }
 
-    public IResult<IAssetAdministrationShell> CreateAssetAdministrationShell(IAssetAdministrationShell aas)
+    private IAssetAdministrationShellServiceProvider CreateServiceProvider(IAssetAdministrationShell aas, bool includeSubmodels)
     {
-        throw new System.NotImplementedException();
+        throw new NotImplementedException();
     }
 
-    public IResult DeleteAssetAdministrationShell(string aasId)
+    public override IResult DeleteAssetAdministrationShell(string aasId)
     {
-        throw new System.NotImplementedException();
+        if (string.IsNullOrEmpty(aasId))
+            return new Result<IAssetAdministrationShell>(new ArgumentNullException(nameof(aasId)));
+        this.UnregisterAssetAdministrationShellServiceProvider(aasId);
+        return this.StorageClient.Delete(aasId);
     }
 
-    public IResult<IAssetAdministrationShellServiceProvider> GetAssetAdministrationShellServiceProvider(string id)
+    public override IResult<IAssetAdministrationShellServiceProvider> GetAssetAdministrationShellServiceProvider(string id)
     {
-        throw new System.NotImplementedException();
+        if (AssetAdministrationShellServiceProviders.TryGetValue(id, out IAssetAdministrationShellServiceProvider assetAdministrationShellServiceProvider))
+            return new Result<IAssetAdministrationShellServiceProvider>(true, assetAdministrationShellServiceProvider);
+        else
+            return new Result<IAssetAdministrationShellServiceProvider>(false, new NotFoundMessage(id));
     }
 
-    public IResult<IEnumerable<IAssetAdministrationShellServiceProvider>> GetAssetAdministrationShellServiceProviders()
+    public override IResult<IEnumerable<IAssetAdministrationShellServiceProvider>> GetAssetAdministrationShellServiceProviders()
     {
-        throw new System.NotImplementedException();
+        if (AssetAdministrationShellServiceProviders.Values == null)
+            return new Result<IEnumerable<IAssetAdministrationShellServiceProvider>>(false, new NotFoundMessage("Asset AdministrationShell Service Providers"));
+
+        return new Result<IEnumerable<IAssetAdministrationShellServiceProvider>>(true, AssetAdministrationShellServiceProviders.Values?.ToList());
     }
 
-    public IEnumerable<IAssetAdministrationShell> GetBinding()
+    public override IResult<IAssetAdministrationShellDescriptor> RegisterAssetAdministrationShellServiceProvider(string id, IAssetAdministrationShellServiceProvider assetAdministrationShellServiceProvider)
     {
-        throw new System.NotImplementedException();
+        if (AssetAdministrationShellServiceProviders.ContainsKey(id))
+            AssetAdministrationShellServiceProviders[id] = assetAdministrationShellServiceProvider;
+        else
+            AssetAdministrationShellServiceProviders.Add(id, assetAdministrationShellServiceProvider);
+
+        return new Result<IAssetAdministrationShellDescriptor>(true, assetAdministrationShellServiceProvider.ServiceDescriptor);
     }
 
-    public IResult<IAssetAdministrationShellDescriptor> RegisterAssetAdministrationShellServiceProvider(string id, IAssetAdministrationShellServiceProvider assetAdministrationShellServiceProvider)
+    public override IResult<IAssetAdministrationShell> RetrieveAssetAdministrationShell(string aasId)
     {
-        throw new System.NotImplementedException();
+        var retrievedShellServiceProvider = GetAssetAdministrationShellServiceProvider(aasId);
+        if (retrievedShellServiceProvider.TryGetEntity(out IAssetAdministrationShellServiceProvider serviceProvider))
+        {
+            IAssetAdministrationShell binding = serviceProvider.GetBinding();
+            return new Result<IAssetAdministrationShell>(true, binding);
+        }
+        return new Result<IAssetAdministrationShell>(false, new NotFoundMessage("Asset Administration Shell Service Provider"));
     }
 
-    public IResult<IAssetAdministrationShell> RetrieveAssetAdministrationShell(string aasId)
+    public override IResult<IElementContainer<IAssetAdministrationShell>> RetrieveAssetAdministrationShells()
     {
-        throw new System.NotImplementedException();
+        throw new NotImplementedException();
     }
 
-    public IResult<IElementContainer<IAssetAdministrationShell>> RetrieveAssetAdministrationShells()
+    public override IResult UnregisterAssetAdministrationShellServiceProvider(string id)
     {
-        throw new System.NotImplementedException();
+        if (AssetAdministrationShellServiceProviders.ContainsKey(id))
+        {
+            AssetAdministrationShellServiceProviders.Remove(id);
+            return new Result(true);
+        }
+        else
+            return new Result(false, new NotFoundMessage(id));
     }
 
-    public IResult UnregisterAssetAdministrationShellServiceProvider(string id)
+    public override IResult UpdateAssetAdministrationShell(string aasId, IAssetAdministrationShell aas)
     {
-        throw new System.NotImplementedException();
-    }
-
-    public IResult UpdateAssetAdministrationShell(string aasId, IAssetAdministrationShell aas)
-    {
-        throw new System.NotImplementedException();
+        throw new NotImplementedException();
     }
 }

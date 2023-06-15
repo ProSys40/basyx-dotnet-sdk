@@ -41,6 +41,10 @@ namespace BaSyx.API.Components
                 _serviceDescriptor = value;
             }
         }
+        public SubmodelRepositoryServiceProvider()
+        {
+            SubmodelServiceProviders = new Dictionary<string, ISubmodelServiceProvider>();
+        }
         public SubmodelRepositoryServiceProvider(ISubmodelRepositoryDescriptor descriptor, ISubmodelServiceProviderFactory serviceProviderFactory) : this(serviceProviderFactory)
         {
             ServiceDescriptor = descriptor;

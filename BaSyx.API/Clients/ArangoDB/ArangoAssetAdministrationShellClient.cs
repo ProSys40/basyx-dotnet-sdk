@@ -8,15 +8,12 @@
 *
 * SPDX-License-Identifier: EPL-2.0
 *******************************************************************************/
-using BaSyx.Models.Connectivity.Descriptors;
 using BaSyx.Models.Core.AssetAdministrationShell.Generics;
-using System.Collections.Generic;
+using BaSyx.Utils.ResultHandling;
 
-namespace BaSyx.API.Components
+namespace BaSyx.API.Clients;
+
+public interface ArangoAssetAdministrationShellClient : IAssetAdministrationShellClient
 {
-    public interface IAssetAdministrationShellRepositoryServiceProvider : IServiceProvider<IEnumerable<IAssetAdministrationShell>, IAssetAdministrationShellRepositoryDescriptor>,
-        IAssetAdministrationShellRepository, IAssetAdministrationShellServiceProviderRegistry
-    {
-        void BindTo(IEnumerable<IAssetAdministrationShell> element);
-    }
+
 }

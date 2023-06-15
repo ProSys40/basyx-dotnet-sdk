@@ -1,6 +1,7 @@
 /*******************************************************************************
-* Copyright (c) 2020, 2021 Robert Bosch GmbH
-* Author: Constantin Ziesche (constantin.ziesche@bosch.com)
+* Copyright (c) 2020, 2021, 2023 Robert Bosch GmbH, Fraunhofer IESE
+* Authors: Constantin Ziesche (constantin.ziesche@bosch.com),
+*          Jannis Jung (jannis.jung@iese.fraunhofer.de)
 *
 * This program and the accompanying materials are made available under the
 * terms of the Eclipse Public License 2.0 which is available at
@@ -12,22 +13,48 @@ using BaSyx.API.Components;
 using BaSyx.Models.Core.AssetAdministrationShell.Generics;
 using System.Linq;
 
-namespace BaSyx.API.AssetAdministrationShell.Extensions
+namespace BaSyx.API.AssetAdministrationShell.Extensions;
+
+public static class AssetAdministrationShellExtensions
 {
-    public static class AssetAdministrationShellExtensions
+    public static IAssetAdministrationShellServiceProvider CreateServiceProvider(this IAssetAdministrationShell aas, Backend backend, bool includeSubmodels)
     {
-        public static IAssetAdministrationShellServiceProvider CreateServiceProvider(this IAssetAdministrationShell aas, bool includeSubmodels)
+        switch(backend)
         {
-            InternalAssetAdministrationShellServiceProvider sp = new InternalAssetAdministrationShellServiceProvider(aas);            
+            case Backend.INTERNAL:
+                return aas.CreateServiceProvider(includeSubmodels);
+            case Backend.ARANGO:
+                return aas.CreateArangoServiceProvider(includeSubmodels);
+            default:
+                return aas.CreateServiceProvider(includeSubmodels);
+        } 
+    }
 
-            if(includeSubmodels && aas.Submodels?.Count() > 0)
-                foreach (var submodel in aas.Submodels.Values)
-                {
-                    var submodelSp = submodel.CreateServiceProvider();
-                    sp.RegisterSubmodelServiceProvider(submodel.IdShort, submodelSp);
-                }
+    public static IAssetAdministrationShellServiceProvider CreateServiceProvider(this IAssetAdministrationShell aas, bool includeSubmodels)
+    {
+        InternalAssetAdministrationShellServiceProvider sp = new InternalAssetAdministrationShellServiceProvider(aas);
 
-            return sp;
-        }
+        if (includeSubmodels && aas.Submodels?.Count() > 0)
+            foreach (var submodel in aas.Submodels.Values)
+            {
+                var submodelSp = submodel.CreateServiceProvider();
+                sp.RegisterSubmodelServiceProvider(submodel.IdShort, submodelSp);
+            }
+
+        return sp;
+    }
+
+    public static IAssetAdministrationShellServiceProvider CreateArangoServiceProvider(this IAssetAdministrationShell aas, bool includeSubmodels)
+    {
+        ArangoAssetAdministrationShellServiceProvider sp = new ArangoAssetAdministrationShellServiceProvider(aas);
+
+        if (includeSubmodels && aas.Submodels?.Count() > 0)
+            foreach (var submodel in aas.Submodels.Values)
+            {
+                var submodelSp = submodel.CreateServiceProvider(Backend.ARANGO);
+                sp.RegisterSubmodelServiceProvider(submodel.IdShort, submodelSp);
+            }
+
+        return sp;
     }
 }

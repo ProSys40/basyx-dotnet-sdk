@@ -13,20 +13,16 @@ using BaSyx.Models.Core.AssetAdministrationShell.Generics;
 
 namespace BaSyx.API.Components;
 
-public class ArangoAssetAdministrationShellServiceProvider : IAssetAdministrationShellServiceProvider
+public class ArangoAssetAdministrationShellServiceProvider : AssetAdministrationShellServiceProvider
 {
-    public IAssetAdministrationShellDescriptor ServiceDescriptor => throw new System.NotImplementedException();
-
-    ISubmodelServiceProviderRegistry SubmodelRegistry { get; }
-
-    ISubmodelServiceProviderRegistry IAssetAdministrationShellServiceProvider.SubmodelRegistry => throw new System.NotImplementedException();
-
-    public void BindTo(IAssetAdministrationShell element)
+    public IAssetAdministrationShell Aas { get; }
+    
+    public ArangoAssetAdministrationShellServiceProvider(IAssetAdministrationShell aas)
     {
-        throw new System.NotImplementedException();
+        Aas = aas;
     }
 
-    public IAssetAdministrationShell GetBinding()
+    public override IAssetAdministrationShell BuildAssetAdministrationShell()
     {
         throw new System.NotImplementedException();
     }
