@@ -30,11 +30,11 @@ namespace BaSyx.API.Components;
 /// <summary>
 /// Provides basic functions for a Submodel persisted in ArangoDB
 /// </summary>
-public sealed class ArangoSubmodelServiceProvider : SubmodelServiceProvider
+public sealed class PersistentSubmodelServiceProvider : SubmodelServiceProvider
 {
     public ISubmodel Submodel { get; }
 
-    public ArangoSubmodelServiceProvider(ISubmodel submodel)
+    public PersistentSubmodelServiceProvider(ISubmodel submodel)
     {
         Submodel = submodel;
     }

@@ -16,7 +16,7 @@ using System.Collections.Generic;
 
 namespace BaSyx.API.Components;
 
-public class ArangoSubmodelRepositoryServiceProvider : ISubmodelRepositoryServiceProvider
+public class PersistentSubmodelRepositoryServiceProvider : ISubmodelRepositoryServiceProvider
 {
     public ISubmodelRepositoryDescriptor ServiceDescriptor => throw new System.NotImplementedException();
 

@@ -38,7 +38,7 @@ public static class SubmodelExtensions
 
     public static ISubmodelServiceProvider CreateArangoServiceProvider(this ISubmodel submodel)
     {
-        return new ArangoSubmodelServiceProvider(submodel);
+        return new PersistentSubmodelServiceProvider(submodel);
     }
 }
 

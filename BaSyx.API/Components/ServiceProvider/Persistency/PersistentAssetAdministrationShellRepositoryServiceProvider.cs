@@ -8,36 +8,22 @@
 *
 * SPDX-License-Identifier: EPL-2.0
 *******************************************************************************/
-using ArangoDBNetStandard;
-using ArangoDBNetStandard.AqlFunctionApi;
-using ArangoDBNetStandard.CollectionApi;
-using ArangoDBNetStandard.DatabaseApi;
-using ArangoDBNetStandard.DocumentApi;
-using ArangoDBNetStandard.GraphApi;
-using ArangoDBNetStandard.TransactionApi;
-using ArangoDBNetStandard.UserApi;
-using BaSyx.API.AssetAdministrationShell.Extensions;
 using BaSyx.API.Clients;
 using BaSyx.API.Components.ServiceProvider;
 using BaSyx.Models.Connectivity.Descriptors;
 using BaSyx.Models.Core.AssetAdministrationShell.Generics;
-using BaSyx.Models.Core.AssetAdministrationShell.Implementations;
 using BaSyx.Models.Core.Common;
 using BaSyx.Utils.ResultHandling;
-using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
-using System.Reflection;
-using System.Transactions;
 
 namespace BaSyx.API.Components;
 
-public class ArangoAssetAdministrationShellRepositoryServiceProvider : AbstractAssetAdministrationShellRepositoryServiceProvider
+public class PersistentAssetAdministrationShellRepositoryServiceProvider : AbstractAssetAdministrationShellRepositoryServiceProvider
 {
-    private readonly IAssetAdministrationShellServiceProviderFactory _assetAdministrationShellServiceProviderFactory = new ArangoAssetAdministrationShellServiceProviderFactory();
-    public IStorageClient<IAssetAdministrationShell> StorageClient { get; }
+    private readonly IAssetAdministrationShellServiceProviderFactory _assetAdministrationShellServiceProviderFactory = new PersistentAssetAdministrationShellServiceProviderFactory();
+    public IStorageClient<IAssetAdministrationShell> StorageClient { get; set; } 
     public override IAssetAdministrationShellRepositoryDescriptor ServiceDescriptor { get => throw new NotImplementedException(); protected set => throw new NotImplementedException(); }
 
     protected Dictionary<string, IAssetAdministrationShellServiceProvider> AssetAdministrationShellServiceProviders { get; }
@@ -104,7 +90,7 @@ public class ArangoAssetAdministrationShellRepositoryServiceProvider : AbstractA
 
     public override IResult<IElementContainer<IAssetAdministrationShell>> RetrieveAssetAdministrationShells()
     {
-        throw new NotImplementedException();
+        return (IResult<IElementContainer<IAssetAdministrationShell>>) this.StorageClient.RetrieveAll();
     }
 
     public override IResult UnregisterAssetAdministrationShellServiceProvider(string id)
@@ -120,6 +106,10 @@ public class ArangoAssetAdministrationShellRepositoryServiceProvider : AbstractA
 
     public override IResult UpdateAssetAdministrationShell(string aasId, IAssetAdministrationShell aas)
     {
-        throw new NotImplementedException();
+        if (string.IsNullOrEmpty(aasId))
+            return new Result<IAssetAdministrationShell>(new ArgumentNullException(nameof(aasId)));
+        if (aas == null)
+            return new Result<IAssetAdministrationShell>(new ArgumentNullException(nameof(aas)));
+        return CreateAssetAdministrationShell(aas);
     }
 }

@@ -1,4 +1,4 @@
-/*******************************************************************************
+﻿/*******************************************************************************
 * Copyright (c) 2023 Fraunhofer IESE
 * Author: Jannis Jung (jannis.jung@iese.fraunhofer.de)
 *
@@ -8,21 +8,17 @@
 *
 * SPDX-License-Identifier: EPL-2.0
 *******************************************************************************/
-using BaSyx.Models.Connectivity.Descriptors;
+using BaSyx.API.AssetAdministrationShell.Extensions;
 using BaSyx.Models.Core.AssetAdministrationShell.Generics;
 
 namespace BaSyx.API.Components;
 
-public class ArangoAssetAdministrationShellServiceProvider : AssetAdministrationShellServiceProvider
+/// <summary>
+/// Creates service providers for Asset Administration Shells
+/// </summary>
+public class PersistentAssetAdministrationShellServiceProviderFactory : IAssetAdministrationShellServiceProviderFactory
 {
-    public IAssetAdministrationShell Aas { get; }
-    
-    public ArangoAssetAdministrationShellServiceProvider(IAssetAdministrationShell aas)
-    {
-        Aas = aas;
-    }
-
-    public override IAssetAdministrationShell BuildAssetAdministrationShell()
+    public IAssetAdministrationShellServiceProvider CreateServiceProvider(IAssetAdministrationShell aas, bool includeSubmodels)
     {
         throw new System.NotImplementedException();
     }

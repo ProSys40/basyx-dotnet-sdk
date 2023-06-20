@@ -12,9 +12,9 @@ using BaSyx.Models.Core.AssetAdministrationShell.Generics;
 
 namespace BaSyx.API.Components
 {
-    internal class ArangoSubmodelElementHandler : SubmodelElementHandler
+    internal class PersistentSubmodelElementHandler : SubmodelElementHandler
     {
-        public ArangoSubmodelElementHandler(GetValueHandler getHandler, SetValueHandler setHandler) : base(getHandler, setHandler)
+        public PersistentSubmodelElementHandler(GetValueHandler getHandler, SetValueHandler setHandler) : base(getHandler, setHandler)
         {
         }
     }

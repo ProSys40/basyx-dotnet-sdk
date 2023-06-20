@@ -46,7 +46,7 @@ public static class AssetAdministrationShellExtensions
 
     public static IAssetAdministrationShellServiceProvider CreateArangoServiceProvider(this IAssetAdministrationShell aas, bool includeSubmodels)
     {
-        ArangoAssetAdministrationShellServiceProvider sp = new ArangoAssetAdministrationShellServiceProvider(aas);
+        PersistentAssetAdministrationShellServiceProvider sp = new PersistentAssetAdministrationShellServiceProvider(aas);
 
         if (includeSubmodels && aas.Submodels?.Count() > 0)
             foreach (var submodel in aas.Submodels.Values)
