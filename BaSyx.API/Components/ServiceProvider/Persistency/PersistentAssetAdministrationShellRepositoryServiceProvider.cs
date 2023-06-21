@@ -22,7 +22,7 @@ namespace BaSyx.API.Components;
 
 public class PersistentAssetAdministrationShellRepositoryServiceProvider : AbstractAssetAdministrationShellRepositoryServiceProvider
 {
-    private readonly IAssetAdministrationShellServiceProviderFactory _assetAdministrationShellServiceProviderFactory = new PersistentAssetAdministrationShellServiceProviderFactory();
+    private readonly IAssetAdministrationShellServiceProviderFactory _assetAdministrationShellServiceProviderFactory = new PersistentAssetAdministrationShellServiceProviderFactory(new PersistentSubmodelServiceProviderFactory());
     public IStorageClient<IAssetAdministrationShell> StorageClient { get; set; } 
     public override IAssetAdministrationShellRepositoryDescriptor ServiceDescriptor { get => throw new NotImplementedException(); protected set => throw new NotImplementedException(); }
 
