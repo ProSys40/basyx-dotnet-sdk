@@ -24,10 +24,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Components\ServiceProvider\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\..\BaSyx.API\BaSyx.API.csproj" />
   </ItemGroup>
 

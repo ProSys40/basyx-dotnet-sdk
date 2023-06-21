@@ -8,6 +8,7 @@
 *
 * SPDX-License-Identifier: EPL-2.0
 *******************************************************************************/
+using BaSyx.API.Clients;
 using BaSyx.Models.Connectivity.Descriptors;
 using BaSyx.Models.Core.AssetAdministrationShell.Generics;
 using BaSyx.Models.Core.Common;
@@ -18,6 +19,9 @@ namespace BaSyx.API.Components;
 
 public class PersistentSubmodelRepositoryServiceProvider : ISubmodelRepositoryServiceProvider
 {
+
+    public IStorageClient<ISubmodel> StorageClient { get; set; }
+
     public ISubmodelRepositoryDescriptor ServiceDescriptor => throw new System.NotImplementedException();
 
     public void BindTo(IEnumerable<ISubmodel> element)
@@ -27,7 +31,7 @@ public class PersistentSubmodelRepositoryServiceProvider : ISubmodelRepositorySe
 
     public IResult<ISubmodel> CreateSubmodel(ISubmodel submodel)
     {
-        throw new System.NotImplementedException();
+        return this.StorageClient.Retrieve(submodel.Identification.Id);
     }
 
     public IResult DeleteSubmodel(string submodelId)

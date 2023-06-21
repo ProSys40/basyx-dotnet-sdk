@@ -1,6 +1,8 @@
 ﻿/*******************************************************************************
-* Copyright (c) 2022 LTSoft - Agrentur für Leittechnik-Software GmbH
-* Author: Björn Höper (hoeper@ltsoft.de)
+* Copyright (c) 2022 LTSoft - Agrentur für Leittechnik-Software GmbH,
+*               2023 Fraunhofer IESE
+* Authors: Björn Höper (hoeper@ltsoft.de),
+*          Jannis Jung (jannis.jung@iese.fraunhofer.de)
 *
 * This program and the accompanying materials are made available under the
 * terms of the Eclipse Public License 2.0 which is available at
@@ -17,26 +19,10 @@ using Moq;
 
 namespace Basyx.API.Tests.Components.ServiceProvider;
 
-public class SubmodelRepositoryServiceProviderTests
+public class SubmodelRepositoryServiceProviderTests : SubmodelRepositoryServiceProviderTestSuite
 {
-    [Fact]
-    public async Task CreateSubmodel_WhenCorrect_CallsFactory()
+    protected override ISubmodelRepositoryServiceProvider GetSubmodelRepositoryServiceProvider(ISubmodelServiceProviderFactory submodelServiceProviderFactory)
     {
-        var submodelMock = new Mock<ISubmodel>();
-        submodelMock.Setup(s => s.Identification)
-            .Returns(new Identifier("http://assetadminshell.io/1/0/0/testmodel", KeyType.URI));
-
-        var serviceProviderMock = new Mock<ISubmodelServiceProvider>();
-        serviceProviderMock.Setup(p => p.GetBinding()).Returns(submodelMock.Object);
-
-        var factoryMock = new Mock<ISubmodelServiceProviderFactory>();
-        factoryMock.Setup(f => f.CreateSubmodelServiceProvider(submodelMock.Object)).Returns(serviceProviderMock.Object);
-        
-        var submodelRepositoryServiceProvider = new SubmodelRepositoryServiceProvider(factoryMock.Object);
-        var result = submodelRepositoryServiceProvider.CreateSubmodel(submodelMock.Object);
-
-        factoryMock.Verify(f => f.CreateSubmodelServiceProvider(submodelMock.Object), Times.AtLeastOnce);
-
-        Assert.Equal(submodelMock.Object, result.Entity);
+        return new SubmodelRepositoryServiceProvider(submodelServiceProviderFactory);
     }
 }
