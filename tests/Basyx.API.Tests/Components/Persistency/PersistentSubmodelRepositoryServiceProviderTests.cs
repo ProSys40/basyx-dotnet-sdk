@@ -1,16 +1,19 @@
-﻿using ArangoDBNetStandard.CollectionApi.Models;
+﻿/*******************************************************************************
+* Copyright (c) 2023 Fraunhofer IESE
+* Authors: Jannis Jung (jannis.jung@iese.fraunhofer.de)
+*
+* This program and the accompanying materials are made available under the
+* terms of the Eclipse Public License 2.0 which is available at
+* http://www.eclipse.org/legal/epl-2.0
+*
+* SPDX-License-Identifier: EPL-2.0
+*******************************************************************************/
 using Basyx.API.Tests.Components.ServiceProvider;
 using BaSyx.API.Clients;
 using BaSyx.API.Components;
 using BaSyx.Models.Core.AssetAdministrationShell.Generics;
-using BaSyx.Models.Core.AssetAdministrationShell.Identification;
 using BaSyx.Utils.ResultHandling;
 using Moq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Basyx.API.Tests.Components.Persistency;
 
@@ -25,7 +28,7 @@ public class PersistentSubmodelRepositoryServiceProviderTests : SubmodelReposito
 
     protected override ISubmodelRepositoryServiceProvider GetSubmodelRepositoryServiceProvider(ISubmodelServiceProviderFactory submodelServiceProviderFactory)
     {
-        var storageClientMock = new Mock<StorageClient<ISubmodel>>();
+        var storageClientMock = new Mock<StorageClient<ISubmodel>>(MockBehavior.Default, "testStorageName", "testCollectionName");
         initializeStorageClientMock(ref storageClientMock);
         return new PersistentSubmodelRepositoryServiceProvider()
         {
@@ -36,13 +39,13 @@ public class PersistentSubmodelRepositoryServiceProviderTests : SubmodelReposito
     private void initializeStorageClientMock(ref Mock<StorageClient<ISubmodel>> storageClientMock)
     {
         storageClientMock
-                    .Setup(storage => storage.CreateOrUpdate(It.IsAny<string>(), It.IsAny<ISubmodel>()))
-                    .Callback<ISubmodel>(create => _storageEntries[create.Identification.Id] = create)
-                    .Returns((string key) => GetResult(key));
+            .Setup(storage => storage.CreateOrUpdate(It.IsAny<string>(), It.IsAny<ISubmodel>()))
+            .Callback<string, ISubmodel>((key, entry) => _storageEntries[key] = entry)
+            .Returns<string, ISubmodel>((key, _ignore) => GetPseudoPersistentResult(key));
 
         storageClientMock
             .Setup(storage => storage.Retrieve(It.IsAny<string>()))
-            .Returns((string key) => GetResult(key));
+            .Returns<string>(key => GetPseudoPersistentResult(key));
 
         storageClientMock
             .Setup(storage => storage.Delete(It.IsAny<string>()))
@@ -50,7 +53,7 @@ public class PersistentSubmodelRepositoryServiceProviderTests : SubmodelReposito
             .Returns(new Result(true));
     }
 
-    private IResult<ISubmodel> GetResult(string key)
+    private IResult<ISubmodel> GetPseudoPersistentResult(string key)
     {
         ISubmodel submodel; 
         if(!_storageEntries.TryGetValue(key, out submodel))
