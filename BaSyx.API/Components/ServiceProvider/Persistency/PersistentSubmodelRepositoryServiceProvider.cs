@@ -19,8 +19,14 @@ namespace BaSyx.API.Components;
 
 public class PersistentSubmodelRepositoryServiceProvider : ISubmodelRepositoryServiceProvider
 {
+    public ISubmodelServiceProviderFactory ServiceProviderFactory { get; set; }
+    public IStorageClient<ISubmodel> StorageClient {get; set; }
+    private Dictionary<string, ISubmodelServiceProvider> SubmodelServiceProviders { get; }
 
-    public IStorageClient<ISubmodel> StorageClient { get; set; }
+    public PersistentSubmodelRepositoryServiceProvider() {
+        SubmodelServiceProviders = new Dictionary<string, ISubmodelServiceProvider>();
+    }
+
 
     public ISubmodelRepositoryDescriptor ServiceDescriptor => throw new System.NotImplementedException();
 
@@ -31,7 +37,17 @@ public class PersistentSubmodelRepositoryServiceProvider : ISubmodelRepositorySe
 
     public IResult<ISubmodel> CreateSubmodel(ISubmodel submodel)
     {
-        return this.StorageClient.Retrieve(submodel.Identification.Id);
+        if (submodel == null)
+            return new Result<ISubmodel>(new System.ArgumentNullException(nameof(submodel)));
+
+        var createdServiceProvider = ServiceProviderFactory.CreateSubmodelServiceProvider(submodel);
+        RegisterSubmodelServiceProvider(submodel.Identification.Id, createdServiceProvider);
+
+        var retrievedSubmodelServiceProvider = GetSubmodelServiceProvider(submodel.Identification.Id);
+        if (retrievedSubmodelServiceProvider.TryGetEntity(out ISubmodelServiceProvider serviceProvider))
+            return this.StorageClient.CreateOrUpdate(submodel.Identification.Id, submodel);
+
+        return new Result<ISubmodel>(false, new Message(MessageType.Error, "Could not retrieve Submodel Service Provider"));
     }
 
     public IResult DeleteSubmodel(string submodelId)
@@ -46,7 +62,12 @@ public class PersistentSubmodelRepositoryServiceProvider : ISubmodelRepositorySe
 
     public IResult<ISubmodelServiceProvider> GetSubmodelServiceProvider(string id)
     {
-        throw new System.NotImplementedException();
+        // TODO: extract to abstract class. (inclusive Doctionary SubmodelServiceProviders)
+        if (!SubmodelServiceProviders.TryGetValue(id, out ISubmodelServiceProvider submodelServiceProvider))
+        {
+            return new Result<ISubmodelServiceProvider>(false, new NotFoundMessage(id));
+        }
+        return new Result<ISubmodelServiceProvider>(true, submodelServiceProvider);
     }
 
     public IResult<IEnumerable<ISubmodelServiceProvider>> GetSubmodelServiceProviders()
@@ -56,7 +77,9 @@ public class PersistentSubmodelRepositoryServiceProvider : ISubmodelRepositorySe
 
     public IResult<ISubmodelDescriptor> RegisterSubmodelServiceProvider(string id, ISubmodelServiceProvider submodelServiceProvider)
     {
-        throw new System.NotImplementedException();
+        // TODO: extract to abstract class. (inclusive Doctionary SubmodelServiceProviders)
+        SubmodelServiceProviders[id] = submodelServiceProvider;
+        return new Result<ISubmodelDescriptor>(true, submodelServiceProvider.ServiceDescriptor);
     }
 
     public IResult<ISubmodel> RetrieveSubmodel(string submodelId)

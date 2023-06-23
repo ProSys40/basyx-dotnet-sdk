@@ -10,12 +10,9 @@
 *
 * SPDX-License-Identifier: EPL-2.0
 *******************************************************************************/
-using ArangoDBNetStandard.UserApi.Models;
-using BaSyx.API.Clients;
 using BaSyx.API.Components;
 using BaSyx.Models.Core.AssetAdministrationShell.Generics;
 using BaSyx.Models.Core.AssetAdministrationShell.Identification;
-using BaSyx.Models.Core.AssetAdministrationShell.Implementations;
 using Moq;
 
 namespace Basyx.API.Tests.Components.ServiceProvider;

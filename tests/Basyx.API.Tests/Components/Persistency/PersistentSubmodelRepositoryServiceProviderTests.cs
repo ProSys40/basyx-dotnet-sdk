@@ -13,6 +13,7 @@ using BaSyx.API.Clients;
 using BaSyx.API.Components;
 using BaSyx.Models.Core.AssetAdministrationShell.Generics;
 using BaSyx.Utils.ResultHandling;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 
 namespace Basyx.API.Tests.Components.Persistency;
@@ -32,6 +33,7 @@ public class PersistentSubmodelRepositoryServiceProviderTests : SubmodelReposito
         initializeStorageClientMock(ref storageClientMock);
         return new PersistentSubmodelRepositoryServiceProvider()
         {
+            ServiceProviderFactory = submodelServiceProviderFactory,
             StorageClient = storageClientMock.Object
         };
     }
