@@ -13,7 +13,7 @@ namespace BaSyx.API.Components.ServiceProvider
 {
     public abstract class AbstractAssetAdministrationShellRepositoryServiceProvider : IAssetAdministrationShellRepositoryServiceProvider
     {
-        private readonly IAssetAdministrationShellServiceProviderFactory _assetAdministrationShellServiceProviderFactory = new PersistentAssetAdministrationShellServiceProviderFactory();
+        private readonly IAssetAdministrationShellServiceProviderFactory _assetAdministrationShellServiceProviderFactory = new PersistentAssetAdministrationShellServiceProviderFactory(new PersistentSubmodelServiceProviderFactory());
 
         public abstract IAssetAdministrationShellRepositoryDescriptor ServiceDescriptor { get; protected set; }
 
