@@ -1,5 +1,5 @@
 ﻿/*******************************************************************************
-* Copyright (c) 2023 Fraunhofer IESE
+* Copyright (c) 2023 the Eclipse BaSyx Authors
 * Author: Jannis Jung (jannis.jung@iese.fraunhofer.de)
 *
 * This program and the accompanying materials are made available under the
@@ -11,6 +11,7 @@
 
 using System.Linq;
 using BaSyx.API.AssetAdministrationShell.Extensions;
+using BaSyx.API.Components.ServiceProvider.Persistency;
 using BaSyx.Models.Core.AssetAdministrationShell.Generics;
 
 namespace BaSyx.API.Components;

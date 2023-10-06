@@ -12,7 +12,7 @@
 namespace BaSyx.ServiceProvider.EventDriven;
 
 /// <summary>
-/// Interface for components that publish lifecycle events for Asset Administration Shells (AAS). The events are made
+/// Interface for components that publish lifecycle events for Asset Administration PersistentShells (AAS). The events are made
 /// available through observables 
 /// </summary>
 public interface IAssetAdministrationShellEventPublisher

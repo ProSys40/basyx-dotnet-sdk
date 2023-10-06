@@ -1,5 +1,5 @@
 /*******************************************************************************
-* Copyright (c) 2020, 2021, 2023 Robert Bosch GmbH, Fraunhofer IESE
+* Copyright (c) 2020, 2021, 2023  the Eclipse BaSyx Authors
 * Authors: Constantin Ziesche (constantin.ziesche@bosch.com),
 *          Jannis Jung (jannis.jung@iese.fraunhofer.de)
 *
@@ -10,6 +10,7 @@
 * SPDX-License-Identifier: EPL-2.0
 *******************************************************************************/
 using BaSyx.API.Components;
+using BaSyx.API.Components.ServiceProvider.Persistency;
 using BaSyx.Models.Core.AssetAdministrationShell.Generics;
 using System.Linq;
 
@@ -19,7 +20,7 @@ public static class AssetAdministrationShellExtensions
 {
     public static IAssetAdministrationShellServiceProvider CreateServiceProvider(this IAssetAdministrationShell aas, Backend backend, bool includeSubmodels)
     {
-        switch(backend)
+        switch (backend)
         {
             case Backend.INTERNAL:
                 return aas.CreateServiceProvider(includeSubmodels);
@@ -27,7 +28,7 @@ public static class AssetAdministrationShellExtensions
                 return aas.CreateArangoServiceProvider(includeSubmodels);
             default:
                 return aas.CreateServiceProvider(includeSubmodels);
-        } 
+        }
     }
 
     public static IAssetAdministrationShellServiceProvider CreateServiceProvider(this IAssetAdministrationShell aas, bool includeSubmodels)

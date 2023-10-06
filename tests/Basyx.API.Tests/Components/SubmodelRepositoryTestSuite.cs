@@ -10,7 +10,6 @@
 *******************************************************************************/
 
 using BaSyx.API.Components;
-using BaSyx.Models.Connectivity.Descriptors;
 using BaSyx.Models.Core.AssetAdministrationShell.Generics;
 using BaSyx.Models.Core.Common;
 using BaSyx.Utils.ResultHandling;
@@ -20,18 +19,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Basyx.API.Tests.Components.ServiceProvider
+namespace Basyx.API.Tests.Components
 {
-    public abstract class SubmodelRepositoryServiceProviderTestSuite
+    public abstract class SubmodelRepositoryTestSuite
     {
-        protected abstract ISubmodelRepositoryServiceProvider GetSubmodelRepositoryServiceProvider();
-
-        public ISubmodelRepositoryDescriptor ServiceDescriptor => throw new NotImplementedException();
-
-        public void BindTo(IEnumerable<ISubmodel> element)
-        {
-            throw new NotImplementedException();
-        }
+        protected abstract ISubmodelRepository GetSubmodelRepository();
 
         public IResult<ISubmodel> CreateSubmodel(ISubmodel submodel)
         {
@@ -43,37 +35,12 @@ namespace Basyx.API.Tests.Components.ServiceProvider
             throw new NotImplementedException();
         }
 
-        public IEnumerable<ISubmodel> GetBinding()
-        {
-            throw new NotImplementedException();
-        }
-
-        public IResult<ISubmodelServiceProvider> GetSubmodelServiceProvider(string id)
-        {
-            throw new NotImplementedException();
-        }
-
-        public IResult<IEnumerable<ISubmodelServiceProvider>> GetSubmodelServiceProviders()
-        {
-            throw new NotImplementedException();
-        }
-
-        public IResult<ISubmodelDescriptor> RegisterSubmodelServiceProvider(string id, ISubmodelServiceProvider submodelServiceProvider)
-        {
-            throw new NotImplementedException();
-        }
-
         public IResult<ISubmodel> RetrieveSubmodel(string submodelId)
         {
             throw new NotImplementedException();
         }
 
         public IResult<IElementContainer<ISubmodel>> RetrieveSubmodels()
-        {
-            throw new NotImplementedException();
-        }
-
-        public IResult UnregisterSubmodelServiceProvider(string id)
         {
             throw new NotImplementedException();
         }

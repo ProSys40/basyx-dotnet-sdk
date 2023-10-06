@@ -15,7 +15,7 @@ using BaSyx.Models.Core.AssetAdministrationShell.Generics;
 namespace BaSyx.API.Components;
 
 /// <summary>
-/// Creates service providers for Asset Administration Shells
+/// Creates service providers for Asset Administration PersistentShells
 /// </summary>
 public interface IAssetAdministrationShellServiceProviderFactory
 {

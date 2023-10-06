@@ -14,71 +14,67 @@ using BaSyx.Models.Connectivity.Descriptors;
 using BaSyx.Models.Core.AssetAdministrationShell.Generics;
 using BaSyx.Models.Core.Common;
 using BaSyx.Utils.ResultHandling;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 
 namespace Basyx.API.Tests.Components.ServiceProvider
 {
-    public abstract class SubmodelRepositoryServiceProviderTestSuite
+    public abstract class AssetAdministrationShellRepositoryServiceProviderTestSuite
     {
-        protected abstract ISubmodelRepositoryServiceProvider GetSubmodelRepositoryServiceProvider();
+        protected abstract IAssetAdministrationShellRepositoryServiceProvider GetAssetAdministrationShellRepositoryServiceProvider();
 
-        public ISubmodelRepositoryDescriptor ServiceDescriptor => throw new NotImplementedException();
+        public IAssetAdministrationShellRepositoryDescriptor ServiceDescriptor => throw new NotImplementedException();
 
-        public void BindTo(IEnumerable<ISubmodel> element)
+        public void BindTo(IEnumerable<IAssetAdministrationShell> element)
         {
             throw new NotImplementedException();
         }
 
-        public IResult<ISubmodel> CreateSubmodel(ISubmodel submodel)
+        public IResult<IAssetAdministrationShell> CreateAssetAdministrationShell(IAssetAdministrationShell aas)
         {
             throw new NotImplementedException();
         }
 
-        public IResult DeleteSubmodel(string submodelId)
+        public IResult DeleteAssetAdministrationShell(string aasId)
         {
             throw new NotImplementedException();
         }
 
-        public IEnumerable<ISubmodel> GetBinding()
+        public IResult<IAssetAdministrationShellServiceProvider> GetAssetAdministrationShellServiceProvider(string id)
         {
             throw new NotImplementedException();
         }
 
-        public IResult<ISubmodelServiceProvider> GetSubmodelServiceProvider(string id)
+        public IResult<IEnumerable<IAssetAdministrationShellServiceProvider>> GetAssetAdministrationShellServiceProviders()
         {
             throw new NotImplementedException();
         }
 
-        public IResult<IEnumerable<ISubmodelServiceProvider>> GetSubmodelServiceProviders()
+        public IEnumerable<IAssetAdministrationShell> GetBinding()
         {
             throw new NotImplementedException();
         }
 
-        public IResult<ISubmodelDescriptor> RegisterSubmodelServiceProvider(string id, ISubmodelServiceProvider submodelServiceProvider)
+        public IResult<IAssetAdministrationShellDescriptor> RegisterAssetAdministrationShellServiceProvider(string id, IAssetAdministrationShellServiceProvider assetAdministrationShellServiceProvider)
         {
             throw new NotImplementedException();
         }
 
-        public IResult<ISubmodel> RetrieveSubmodel(string submodelId)
+        public IResult<IAssetAdministrationShell> RetrieveAssetAdministrationShell(string aasId)
         {
             throw new NotImplementedException();
         }
 
-        public IResult<IElementContainer<ISubmodel>> RetrieveSubmodels()
+        public IResult<IElementContainer<IAssetAdministrationShell>> RetrieveAssetAdministrationShells()
         {
             throw new NotImplementedException();
         }
 
-        public IResult UnregisterSubmodelServiceProvider(string id)
+        public IResult UnregisterAssetAdministrationShellServiceProvider(string id)
         {
             throw new NotImplementedException();
         }
 
-        public IResult UpdateSubmodel(string submodelId, ISubmodel submodel)
+        public IResult UpdateAssetAdministrationShell(string aasId, IAssetAdministrationShell aas)
         {
             throw new NotImplementedException();
         }

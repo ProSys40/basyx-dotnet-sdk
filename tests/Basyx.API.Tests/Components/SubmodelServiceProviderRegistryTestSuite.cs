@@ -11,8 +11,6 @@
 
 using BaSyx.API.Components;
 using BaSyx.Models.Connectivity.Descriptors;
-using BaSyx.Models.Core.AssetAdministrationShell.Generics;
-using BaSyx.Models.Core.Common;
 using BaSyx.Utils.ResultHandling;
 using System;
 using System.Collections.Generic;
@@ -20,33 +18,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Basyx.API.Tests.Components.ServiceProvider
+namespace Basyx.API.Tests.Components
 {
-    public abstract class SubmodelRepositoryServiceProviderTestSuite
+    public abstract class SubmodelServiceProviderRegistryTestSuite
     {
-        protected abstract ISubmodelRepositoryServiceProvider GetSubmodelRepositoryServiceProvider();
-
-        public ISubmodelRepositoryDescriptor ServiceDescriptor => throw new NotImplementedException();
-
-        public void BindTo(IEnumerable<ISubmodel> element)
-        {
-            throw new NotImplementedException();
-        }
-
-        public IResult<ISubmodel> CreateSubmodel(ISubmodel submodel)
-        {
-            throw new NotImplementedException();
-        }
-
-        public IResult DeleteSubmodel(string submodelId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public IEnumerable<ISubmodel> GetBinding()
-        {
-            throw new NotImplementedException();
-        }
+        protected abstract ISubmodelServiceProviderRegistry GetSubmodelServiceProviderRegistry();
 
         public IResult<ISubmodelServiceProvider> GetSubmodelServiceProvider(string id)
         {
@@ -63,22 +39,7 @@ namespace Basyx.API.Tests.Components.ServiceProvider
             throw new NotImplementedException();
         }
 
-        public IResult<ISubmodel> RetrieveSubmodel(string submodelId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public IResult<IElementContainer<ISubmodel>> RetrieveSubmodels()
-        {
-            throw new NotImplementedException();
-        }
-
         public IResult UnregisterSubmodelServiceProvider(string id)
-        {
-            throw new NotImplementedException();
-        }
-
-        public IResult UpdateSubmodel(string submodelId, ISubmodel submodel)
         {
             throw new NotImplementedException();
         }

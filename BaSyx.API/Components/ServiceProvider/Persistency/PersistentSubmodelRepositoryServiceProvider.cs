@@ -9,7 +9,7 @@
 * SPDX-License-Identifier: EPL-2.0
 *******************************************************************************/
 using BaSyx.API.AssetAdministrationShell.Extensions;
-using BaSyx.API.Clients;
+using BaSyx.API.Clients.Persistency;
 using BaSyx.Models.Connectivity;
 using BaSyx.Models.Connectivity.Descriptors;
 using BaSyx.Models.Core.AssetAdministrationShell.Generics;
@@ -20,16 +20,18 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.NetworkInformation;
+using System.Runtime.CompilerServices;
 
 namespace BaSyx.API.Components;
 
 public class PersistentSubmodelRepositoryServiceProvider : ISubmodelRepositoryServiceProvider
 {
-    private readonly ISubmodelServiceProviderFactory _serviceProviderFactory;
+    IPersistentCollection<string, ISubmodel> _persistentSubmodels;
+    ISubmodelServiceProviderRegistry _servicePrividerRegistry;
 
-    public IStorageClient<ISubmodel> StorageClient {get; set; }
-
-    public PersistentSubmodelRepositoryServiceProvider() {
+    public PersistentSubmodelRepositoryServiceProvider()
+    {
     }
 
     public ISubmodelRepositoryDescriptor ServiceDescriptor
@@ -46,96 +48,72 @@ public class PersistentSubmodelRepositoryServiceProvider : ISubmodelRepositorySe
     public void BindTo(IEnumerable<ISubmodel> submodels)
     {
         submodels.ToList()
-            .ForEach(submodel => {
+            .ForEach(submodel =>
+            {
                 UpdateSubmodel(submodel.Identification.Id, submodel);
-             });
+            });
     }
 
     public IResult<ISubmodel> CreateSubmodel(ISubmodel submodel)
     {
-        return StorageClient.CreateOrUpdate(submodel.Identification.Id, submodel);
+        return _persistentSubmodels.CreateOrUpdate(submodel.Identification.Id, submodel);
     }
 
     public IResult DeleteSubmodel(string submodelId)
     {
-        if (string.IsNullOrEmpty(submodelId))
-        {
-            return new Result<ISubmodel>(new ArgumentNullException(nameof(submodelId)));
-        }
-
-        return StorageClient.Delete(submodelId);
+        return _persistentSubmodels.Delete(submodelId);
     }
 
     public IEnumerable<ISubmodel> GetBinding()
     {
-        IResult<List<ISubmodel>> result = StorageClient.RetrieveAll();
-        if (!result.Success || result.Entity.Count == 0)
+
+        List<ISubmodel> submodels = new List<ISubmodel>();
+        if (GetSubmodelServiceProviders().TryGetEntity(out IEnumerable<ISubmodelServiceProvider> serviceProviders))
         {
-            return new List<ISubmodel>();
+            serviceProviders.ToList()
+                .Select(serviceProvider => serviceProvider.GetBinding()).ToList()
+                .ForEach(submodels.Add);
         }
-        return result.Entity;
+        return submodels;
+
     }
 
     public IResult<ISubmodelServiceProvider> GetSubmodelServiceProvider(string submodelId)
     {
-        IResult<ISubmodel> submodelResult = RetrieveSubmodel(submodelId);
-        ISubmodel submodel = ExtractSubmodel(submodelResult);
-
-        if (submodel == null)
-        {
-            return new Result<ISubmodelServiceProvider>(false, new NotFoundMessage(submodelId));
-        }
-        return new Result<ISubmodelServiceProvider>(true, CreateSubmodelSrviceProvider(submodel));
+        return _servicePrividerRegistry.GetSubmodelServiceProvider(submodelId);
     }
 
     public IResult<IEnumerable<ISubmodelServiceProvider>> GetSubmodelServiceProviders()
     {
-        IEnumerable<ISubmodel> submodels = GetBinding();
-        List<ISubmodelServiceProvider> submodelServiceProviders = submodels.Select(submodel => CreateSubmodelSrviceProvider(submodel)).ToList();
-        return new Result<IEnumerable<ISubmodelServiceProvider>>(true, submodelServiceProviders);
+       return _servicePrividerRegistry.GetSubmodelServiceProviders();
     }
 
     public IResult<ISubmodelDescriptor> RegisterSubmodelServiceProvider(string id, ISubmodelServiceProvider submodelServiceProvider)
     {
-        ISubmodel submodel = submodelServiceProvider.GetBinding();
-        StorageClient.CreateOrUpdate(id, submodel);
-        return new Result<ISubmodelDescriptor>(true, submodelServiceProvider.ServiceDescriptor);
+        return _servicePrividerRegistry.RegisterSubmodelServiceProvider(id, submodelServiceProvider);
     }
 
     public IResult<ISubmodel> RetrieveSubmodel(string submodelId)
     {
-        return StorageClient.Retrieve(submodelId);
+        if (GetSubmodelServiceProvider(submodelId).TryGetEntity(out ISubmodelServiceProvider serviceProvider))
+        {
+            return new Result<ISubmodel>(true, serviceProvider.GetBinding());
+        }
+        return new Result<ISubmodel>(false, new NotFoundMessage($"Submodel Service Provider for submodelId '{submodelId}'"));
     }
 
     public IResult<IElementContainer<ISubmodel>> RetrieveSubmodels()
     {
-        // TODO: könnte in abstrakte Klasse
         return new Result<IElementContainer<ISubmodel>>(true, new ElementContainer<ISubmodel>(null, GetBinding()));
     }
 
     public IResult UnregisterSubmodelServiceProvider(string submodelId)
     {
-        // TODO: should this delete the submodel from the storage?
-        //       if not: adapt this method!!!
-        return DeleteSubmodel(submodelId);
+        return _servicePrividerRegistry.UnregisterSubmodelServiceProvider(submodelId);
     }
 
     public IResult UpdateSubmodel(string submodelId, ISubmodel submodel)
     {
-        return StorageClient.CreateOrUpdate(submodelId, submodel);
-    }
-
-    private ISubmodel ExtractSubmodel(IResult<ISubmodel> submodelResult)
-    {
-        if (!submodelResult.Success || submodelResult.Entity == null)
-        {
-            return null;
-        }
-        return submodelResult.Entity;
-    }
-
-    private ISubmodelServiceProvider CreateSubmodelSrviceProvider(ISubmodel submodel)
-    {
-        return _serviceProviderFactory.CreateSubmodelServiceProvider(submodel);
+        return _persistentSubmodels.CreateOrUpdate(submodelId, submodel);
     }
 }

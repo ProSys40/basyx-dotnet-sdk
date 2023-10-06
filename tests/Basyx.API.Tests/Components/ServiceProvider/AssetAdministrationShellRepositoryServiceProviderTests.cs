@@ -27,7 +27,7 @@ public class AssetAdministrationShellRepositoryServiceProviderTests
 
         var serviceProviderMock = new Mock<IAssetAdministrationShellServiceProvider>();
         serviceProviderMock.Setup(p => p.GetBinding()).Returns(aasMock.Object);
-            
+
         var factoryMock = new Mock<IAssetAdministrationShellServiceProviderFactory>();
         factoryMock.Setup(f => f.CreateServiceProvider(aasMock.Object, true)).Returns(serviceProviderMock.Object);
 

@@ -1,5 +1,5 @@
 ﻿/*******************************************************************************
-* Copyright (c) 2023 Fraunhofer IESE
+* Copyright (c) 2023 the Eclipse BaSyx Authors
 * Author: Jannis Jung (jannis.jung@iese.fraunhofer.de)
 *
 * This program and the accompanying materials are made available under the
@@ -8,20 +8,16 @@
 *
 * SPDX-License-Identifier: EPL-2.0
 *******************************************************************************/
-using BaSyx.Models.Connectivity.Descriptors;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BaSyx.API.Clients
+namespace BaSyx.API.Clients.Persistency;
+
+public class CompositeKey<T>
 {
-    internal class ArangoSubmodelClientFactory : ISubmodelClientFactory
-    {
-        public ISubmodelClient CreateSubmodelClient(ISubmodelDescriptor serviceDescriptor)
-        {
-            throw new NotImplementedException();
-        }
-    }
+    public T[] Keys { get; set; }
 }

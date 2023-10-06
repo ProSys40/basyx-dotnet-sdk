@@ -23,6 +23,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using BaSyx.Models.Core.AssetAdministrationShell.Implementations;
 using Microsoft.Extensions.Logging;
+using BaSyx.API.Clients;
 
 namespace BaSyx.API.Components
 {
@@ -35,14 +36,11 @@ namespace BaSyx.API.Components
 
         private ISubmodel _submodel;
 
-        public const int DEFAULT_TIMEOUT = 60000;
         public ISubmodelDescriptor ServiceDescriptor { get; internal set; }
 
-        private readonly Dictionary<string, MethodCalledHandler> methodCalledHandler;
         private readonly Dictionary<string, SubmodelElementHandler> submodelElementHandler;
         private readonly Dictionary<string, Action<IValue>> updateFunctions;
         private readonly Dictionary<string, EventDelegate> eventDelegates;
-        private readonly Dictionary<string, InvocationResponse> invocationResults;
         
         private IMessageClient messageClient;
 
@@ -51,11 +49,9 @@ namespace BaSyx.API.Components
         /// </summary>
         public SubmodelServiceProvider()
         {
-            methodCalledHandler = new Dictionary<string, MethodCalledHandler>();
             submodelElementHandler = new Dictionary<string, SubmodelElementHandler>();
             updateFunctions = new Dictionary<string, Action<IValue>>();
             eventDelegates = new Dictionary<string, EventDelegate>();
-            invocationResults = new Dictionary<string, InvocationResponse>();
         }
         /// <summary>
         /// Contructor for SubmodelServiceProvider with a Submodel object to bind to
@@ -181,10 +177,7 @@ namespace BaSyx.API.Components
         
         public MethodCalledHandler RetrieveMethodCalledHandler(string pathToOperation)
         {
-            if (methodCalledHandler.TryGetValue(pathToOperation, out MethodCalledHandler handler))
-                return handler;
-            else
-                return null;
+            return OperationHandler.RetrieveMethodCalledHandler(pathToOperation);
         }
        
         public SubmodelElementHandler RetrieveSubmodelElementHandler(string pathToElement)
@@ -211,10 +204,7 @@ namespace BaSyx.API.Components
 
         public void RegisterMethodCalledHandler(string pathToOperation, MethodCalledHandler handler)
         {
-            if (!methodCalledHandler.ContainsKey(pathToOperation))
-                methodCalledHandler.Add(pathToOperation, handler);
-            else
-                methodCalledHandler[pathToOperation] = handler;
+            OperationHandler.RegisterMethodCalledHandler(pathToOperation, handler);
         }
 
         public void RegisterEventDelegate(string pathToEvent, EventDelegate eventDelegate)
@@ -227,65 +217,7 @@ namespace BaSyx.API.Components
 
         public IResult<InvocationResponse> InvokeOperation(string pathToOperation, InvocationRequest invocationRequest)
         {
-            if (_submodel == null)
-                return new Result<InvocationResponse>(false, new NotFoundMessage("Submodel"));
-
-            var operation_Retrieved = _submodel.SubmodelElements.Retrieve<IOperation>(pathToOperation);
-            if (operation_Retrieved.Success && operation_Retrieved.Entity != null)
-            {
-                MethodCalledHandler methodHandler;
-                if (methodCalledHandler.TryGetValue(pathToOperation, out MethodCalledHandler handler))
-                    methodHandler = handler;
-                else if (operation_Retrieved.Entity.OnMethodCalled != null)
-                    methodHandler = operation_Retrieved.Entity.OnMethodCalled;
-                else
-                    return new Result<InvocationResponse>(false, new NotFoundMessage($"MethodHandler for {pathToOperation}"));
-
-                InvocationResponse invocationResponse = new InvocationResponse(invocationRequest.RequestId);
-                invocationResponse.InOutputArguments = invocationRequest.InOutputArguments;
-                invocationResponse.OutputArguments = CreateOutputArguments(operation_Retrieved.Entity.OutputVariables);
-
-                int timeout = DEFAULT_TIMEOUT;
-                if (invocationRequest.Timeout.HasValue)
-                    timeout = invocationRequest.Timeout.Value;
-
-                using (CancellationTokenSource cancellationTokenSource = new CancellationTokenSource())
-                {
-                    Task<OperationResult> runner = Task.Run(async () =>
-                    {
-                        try
-                        {
-                            invocationResponse.ExecutionState = ExecutionState.Running;
-                            return await methodHandler.Invoke(operation_Retrieved.Entity, invocationRequest.InputArguments, invocationResponse.InOutputArguments, invocationResponse.OutputArguments, cancellationTokenSource.Token);                                                        
-                        }
-                        catch (Exception e)
-                        {
-                            invocationResponse.ExecutionState = ExecutionState.Failed;
-                            return new OperationResult(e);
-                        }
-
-                    }, cancellationTokenSource.Token);
-
-                    if (Task.WhenAny(runner, Task.Delay(timeout, cancellationTokenSource.Token)).Result == runner)
-                    {
-                        cancellationTokenSource.Cancel();
-
-                        invocationResponse.OperationResult = runner.Result;
-                        if (invocationResponse.ExecutionState != ExecutionState.Failed)
-                            invocationResponse.ExecutionState = ExecutionState.Completed;
-
-                        return new Result<InvocationResponse>(true, invocationResponse);
-                    }
-                    else
-                    {
-                        cancellationTokenSource.Cancel();
-                        invocationResponse.OperationResult = new OperationResult(false, new TimeoutMessage());
-                        invocationResponse.ExecutionState = ExecutionState.Timeout;
-                        return new Result<InvocationResponse>(true, invocationResponse);
-                    }
-                }
-            }
-            return new Result<InvocationResponse>(operation_Retrieved);
+            return OperationHandler.InvokeOperation(pathToOperation, _submodel, invocationRequest);
         }
 
         private IOperationVariableSet CreateOutputArguments(IOperationVariableSet outputVariables)
@@ -315,99 +247,12 @@ namespace BaSyx.API.Components
 
         public IResult<CallbackResponse> InvokeOperationAsync(string pathToOperation, InvocationRequest invocationRequest)
         {
-            if (_submodel == null)
-                return new Result<CallbackResponse>(false, new NotFoundMessage("Submodel"));
-            if (invocationRequest == null)
-                return new Result<CallbackResponse>(new ArgumentNullException(nameof(invocationRequest)));
-
-            var operation_Retrieved = _submodel.SubmodelElements.Retrieve<IOperation>(pathToOperation);
-            if (operation_Retrieved.Success && operation_Retrieved.Entity != null)
-            {
-                MethodCalledHandler methodHandler;
-                if (methodCalledHandler.TryGetValue(pathToOperation, out MethodCalledHandler handler))
-                    methodHandler = handler;
-                else if (operation_Retrieved.Entity.OnMethodCalled != null)
-                    methodHandler = operation_Retrieved.Entity.OnMethodCalled;
-                else
-                    return new Result<CallbackResponse>(false, new NotFoundMessage($"MethodHandler for {pathToOperation}"));
-             
-                Task invocationTask = Task.Run(async() =>
-                {
-                    InvocationResponse invocationResponse = new InvocationResponse(invocationRequest.RequestId);
-                    invocationResponse.InOutputArguments = invocationRequest.InOutputArguments;
-                    SetInvocationResult(pathToOperation, invocationRequest.RequestId, ref invocationResponse);
-
-                    int timeout = DEFAULT_TIMEOUT;
-                    if (invocationRequest.Timeout.HasValue)
-                        timeout = invocationRequest.Timeout.Value;
-
-                    using (var cancellationTokenSource = new CancellationTokenSource())
-                    {
-                        Task<OperationResult> runner = Task.Run(async () =>
-                        {
-                            try
-                            {
-                                invocationResponse.ExecutionState = ExecutionState.Running;
-                                return await methodHandler.Invoke(operation_Retrieved.Entity, invocationRequest.InputArguments, invocationResponse.InOutputArguments, invocationResponse.OutputArguments, cancellationTokenSource.Token);                                                              
-                            }
-                            catch (Exception e)
-                            {
-                                invocationResponse.ExecutionState = ExecutionState.Failed;
-                                return new OperationResult(e);
-                            }
-                        }, cancellationTokenSource.Token);
-
-                        if (await Task.WhenAny(runner, Task.Delay(timeout, cancellationTokenSource.Token)) == runner)
-                        {
-                            cancellationTokenSource.Cancel();
-                            invocationResponse.OperationResult = runner.Result;
-                            if (invocationResponse.ExecutionState != ExecutionState.Failed)
-                                invocationResponse.ExecutionState = ExecutionState.Completed;
-                        }
-                        else
-                        {
-                            cancellationTokenSource.Cancel();
-                            invocationResponse.OperationResult = new OperationResult(false, new TimeoutMessage());
-                            invocationResponse.ExecutionState = ExecutionState.Timeout;
-                        }
-                    }
-                });
-         
-                string endpoint = ServiceDescriptor?.Endpoints?.FirstOrDefault()?.Address;
-                CallbackResponse callbackResponse = new CallbackResponse(invocationRequest.RequestId);
-                if (string.IsNullOrEmpty(endpoint))
-                    callbackResponse.CallbackUrl = new Uri($"/submodelElements/{pathToOperation}/invocationList/{invocationRequest.RequestId}", UriKind.Relative);
-                else
-                    callbackResponse.CallbackUrl = new Uri($"{endpoint}/submodelElements/{pathToOperation}/invocationList/{invocationRequest.RequestId}", UriKind.Absolute);
-                return new Result<CallbackResponse>(true, callbackResponse);
-            }
-            return new Result<CallbackResponse>(operation_Retrieved);
-        }
-
-        private void SetInvocationResult(string operationId, string requestId, ref InvocationResponse invocationResponse)
-        {
-            string key = string.Join("_", operationId, requestId);
-            if (invocationResults.ContainsKey(key))
-            {
-                invocationResults[key] = invocationResponse;
-            }
-            else
-            {
-                invocationResults.Add(key, invocationResponse);
-            }
+            return OperationHandler.InvokeOperationAsync(pathToOperation, _submodel, ServiceDescriptor, invocationRequest);
         }
       
         public IResult<InvocationResponse> GetInvocationResult(string pathToOperation, string requestId)
         {
-            string key = string.Join("_", pathToOperation, requestId);
-            if (invocationResults.ContainsKey(key))
-            {
-                return new Result<InvocationResponse>(true, invocationResults[key]);
-            }
-            else
-            {
-               return new Result<InvocationResponse>(false, new NotFoundMessage($"Request with id {requestId}"));
-            }
+            return OperationHandler.GetInvocationResult(pathToOperation, requestId);
         }
 
         public async Task<IResult> PublishEventAsync(IEventMessage eventMessage)

@@ -9,7 +9,6 @@
 * SPDX-License-Identifier: EPL-2.0
 *******************************************************************************/
 using BaSyx.API.AssetAdministrationShell.Extensions;
-using BaSyx.API.Components.ServiceProvider;
 using BaSyx.Models.Connectivity.Descriptors;
 using BaSyx.Models.Core.AssetAdministrationShell.Generics;
 using BaSyx.Models.Core.Common;
@@ -20,16 +19,15 @@ using System.Linq;
 
 namespace BaSyx.API.Components
 {
-    public class AssetAdministrationShellRepositoryServiceProvider : AbstractAssetAdministrationShellRepositoryServiceProvider
+    public class AssetAdministrationShellRepositoryServiceProvider : IAssetAdministrationShellRepositoryServiceProvider
     {
         private readonly IAssetAdministrationShellServiceProviderFactory _assetAdministrationShellServiceProviderFactory;
-
-        private Dictionary<string, IAssetAdministrationShellServiceProvider> AssetAdministrationShellServiceProviders { get; }
         public IEnumerable<IAssetAdministrationShell> AssetAdministrationShells => GetBinding();
 
+        private Dictionary<string, IAssetAdministrationShellServiceProvider> AssetAdministrationShellServiceProviders { get; }
 
         private IAssetAdministrationShellRepositoryDescriptor _serviceDescriptor;
-        public override IAssetAdministrationShellRepositoryDescriptor ServiceDescriptor
+        public IAssetAdministrationShellRepositoryDescriptor ServiceDescriptor
         {
             get
             {
@@ -38,16 +36,12 @@ namespace BaSyx.API.Components
 
                 return _serviceDescriptor;
             }
-            protected set
+            private set
             {
                 _serviceDescriptor = value;
             }
         }
-        public AssetAdministrationShellRepositoryServiceProvider()
-        {
-            AssetAdministrationShellServiceProviders = new Dictionary<string, IAssetAdministrationShellServiceProvider>();
-        }
-        public AssetAdministrationShellRepositoryServiceProvider(IAssetAdministrationShellRepositoryDescriptor descriptor, 
+        public AssetAdministrationShellRepositoryServiceProvider(IAssetAdministrationShellRepositoryDescriptor descriptor,
             IAssetAdministrationShellServiceProviderFactory assetAdministrationShellServiceProviderFactory) : this(assetAdministrationShellServiceProviderFactory)
         {
             ServiceDescriptor = descriptor;
@@ -56,10 +50,33 @@ namespace BaSyx.API.Components
         public AssetAdministrationShellRepositoryServiceProvider(IAssetAdministrationShellServiceProviderFactory assetAdministrationShellServiceProviderFactory)
         {
             _assetAdministrationShellServiceProviderFactory = assetAdministrationShellServiceProviderFactory;
-            this.AssetAdministrationShellServiceProviders = new Dictionary<string, IAssetAdministrationShellServiceProvider>();
+            AssetAdministrationShellServiceProviders = new Dictionary<string, IAssetAdministrationShellServiceProvider>();
         }
 
-        public override IResult<IAssetAdministrationShell> CreateAssetAdministrationShell(IAssetAdministrationShell aas)
+        public void BindTo(IEnumerable<IAssetAdministrationShell> boundElement)
+        {
+            foreach (var assetAdministrationShell in boundElement)
+            {
+                RegisterAssetAdministrationShellServiceProvider(assetAdministrationShell.Identification.Id, assetAdministrationShell.CreateServiceProvider(true));
+            }
+            ServiceDescriptor = ServiceDescriptor ?? new AssetAdministrationShellRepositoryDescriptor(boundElement, null);
+        }
+        public IEnumerable<IAssetAdministrationShell> GetBinding()
+        {
+            List<IAssetAdministrationShell> assetAdministrationShells = new List<IAssetAdministrationShell>();
+            var retrievedShellServiceProviders = GetAssetAdministrationShellServiceProviders();
+            if (retrievedShellServiceProviders.TryGetEntity(out IEnumerable<IAssetAdministrationShellServiceProvider> serviceProviders))
+            {
+                foreach (var serviceProvider in serviceProviders)
+                {
+                    IAssetAdministrationShell binding = serviceProvider.GetBinding();
+                    assetAdministrationShells.Add(binding);
+                }
+            }
+            return assetAdministrationShells;
+        }
+
+        public IResult<IAssetAdministrationShell> CreateAssetAdministrationShell(IAssetAdministrationShell aas)
         {
             if (aas == null)
                 return new Result<IAssetAdministrationShell>(new ArgumentNullException(nameof(aas)));
@@ -70,19 +87,19 @@ namespace BaSyx.API.Components
             var retrievedShellServiceProvider = GetAssetAdministrationShellServiceProvider(aas.Identification.Id);
             if (retrievedShellServiceProvider.TryGetEntity(out IAssetAdministrationShellServiceProvider serviceProvider))
                 return new Result<IAssetAdministrationShell>(true, serviceProvider.GetBinding());
-            
+
             return new Result<IAssetAdministrationShell>(false, new Message(MessageType.Error, "Could not retrieve Asset Administration Shell Service Provider"));
         }
 
-        public override IResult DeleteAssetAdministrationShell(string aasId)
+        public IResult DeleteAssetAdministrationShell(string aasId)
         {
             if (string.IsNullOrEmpty(aasId))
                 return new Result<IAssetAdministrationShell>(new ArgumentNullException(nameof(aasId)));
-            
+
             return UnregisterAssetAdministrationShellServiceProvider(aasId);
         }
 
-        public override IResult<IAssetAdministrationShellServiceProvider> GetAssetAdministrationShellServiceProvider(string id)
+        public IResult<IAssetAdministrationShellServiceProvider> GetAssetAdministrationShellServiceProvider(string id)
         {
             if (AssetAdministrationShellServiceProviders.TryGetValue(id, out IAssetAdministrationShellServiceProvider assetAdministrationShellServiceProvider))
                 return new Result<IAssetAdministrationShellServiceProvider>(true, assetAdministrationShellServiceProvider);
@@ -90,7 +107,7 @@ namespace BaSyx.API.Components
                 return new Result<IAssetAdministrationShellServiceProvider>(false, new NotFoundMessage(id));
         }
 
-        public override IResult<IEnumerable<IAssetAdministrationShellServiceProvider>> GetAssetAdministrationShellServiceProviders()
+        public IResult<IEnumerable<IAssetAdministrationShellServiceProvider>> GetAssetAdministrationShellServiceProviders()
         {
             if (AssetAdministrationShellServiceProviders.Values == null)
                 return new Result<IEnumerable<IAssetAdministrationShellServiceProvider>>(false, new NotFoundMessage("Asset AdministrationShell Service Providers"));
@@ -98,7 +115,7 @@ namespace BaSyx.API.Components
             return new Result<IEnumerable<IAssetAdministrationShellServiceProvider>>(true, AssetAdministrationShellServiceProviders.Values?.ToList());
         }
 
-        public override IResult<IAssetAdministrationShellDescriptor> RegisterAssetAdministrationShellServiceProvider(string id, IAssetAdministrationShellServiceProvider assetAdministrationShellServiceProvider)
+        public IResult<IAssetAdministrationShellDescriptor> RegisterAssetAdministrationShellServiceProvider(string id, IAssetAdministrationShellServiceProvider assetAdministrationShellServiceProvider)
         {
             if (AssetAdministrationShellServiceProviders.ContainsKey(id))
                 AssetAdministrationShellServiceProviders[id] = assetAdministrationShellServiceProvider;
@@ -108,7 +125,7 @@ namespace BaSyx.API.Components
             return new Result<IAssetAdministrationShellDescriptor>(true, assetAdministrationShellServiceProvider.ServiceDescriptor);
         }
 
-        public override IResult UnregisterAssetAdministrationShellServiceProvider(string id)
+        public IResult UnregisterAssetAdministrationShellServiceProvider(string id)
         {
             if (AssetAdministrationShellServiceProviders.ContainsKey(id))
             {
@@ -119,10 +136,10 @@ namespace BaSyx.API.Components
                 return new Result(false, new NotFoundMessage(id));
         }
 
-        public override IResult<IAssetAdministrationShell> RetrieveAssetAdministrationShell(string aasId)
+        public IResult<IAssetAdministrationShell> RetrieveAssetAdministrationShell(string aasId)
         {
             var retrievedShellServiceProvider = GetAssetAdministrationShellServiceProvider(aasId);
-            if(retrievedShellServiceProvider.TryGetEntity(out IAssetAdministrationShellServiceProvider serviceProvider))
+            if (retrievedShellServiceProvider.TryGetEntity(out IAssetAdministrationShellServiceProvider serviceProvider))
             {
                 IAssetAdministrationShell binding = serviceProvider.GetBinding();
                 return new Result<IAssetAdministrationShell>(true, binding);
@@ -130,12 +147,12 @@ namespace BaSyx.API.Components
             return new Result<IAssetAdministrationShell>(false, new NotFoundMessage("Asset Administration Shell Service Provider"));
         }
 
-        public override IResult<IElementContainer<IAssetAdministrationShell>> RetrieveAssetAdministrationShells()
+        public IResult<IElementContainer<IAssetAdministrationShell>> RetrieveAssetAdministrationShells()
         {
             return new Result<IElementContainer<IAssetAdministrationShell>>(true, new ElementContainer<IAssetAdministrationShell>(null, AssetAdministrationShells));
         }
 
-        public override IResult UpdateAssetAdministrationShell(string aasId, IAssetAdministrationShell aas)
+        public IResult UpdateAssetAdministrationShell(string aasId, IAssetAdministrationShell aas)
         {
             if (string.IsNullOrEmpty(aasId))
                 return new Result<IAssetAdministrationShell>(new ArgumentNullException(nameof(aasId)));
