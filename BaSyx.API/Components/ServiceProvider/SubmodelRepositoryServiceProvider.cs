@@ -21,7 +21,6 @@ namespace BaSyx.API.Components
 {
     public class SubmodelRepositoryServiceProvider : ISubmodelRepositoryServiceProvider
     {
-        private readonly ISubmodelServiceProviderFactory _serviceProviderFactory;
         public IEnumerable<ISubmodel> Submodels => GetBinding();
 
         private Dictionary<string, ISubmodelServiceProvider> SubmodelServiceProviders { get; }
@@ -41,24 +40,23 @@ namespace BaSyx.API.Components
                 _serviceDescriptor = value;
             }
         }
-        public SubmodelRepositoryServiceProvider(ISubmodelRepositoryDescriptor descriptor, ISubmodelServiceProviderFactory serviceProviderFactory) : this(serviceProviderFactory)
+        public SubmodelRepositoryServiceProvider(ISubmodelRepositoryDescriptor descriptor) : this()
         {
             ServiceDescriptor = descriptor;
         }
 
-        public SubmodelRepositoryServiceProvider(ISubmodelServiceProviderFactory serviceProviderFactory)
+        public SubmodelRepositoryServiceProvider()
         {
-            _serviceProviderFactory = serviceProviderFactory;
             SubmodelServiceProviders = new Dictionary<string, ISubmodelServiceProvider>();
         }
 
-        public void BindTo(IEnumerable<ISubmodel> boundElement)
+        public void BindTo(IEnumerable<ISubmodel> submodels)
         {
-            foreach (var submodel in boundElement)
+            foreach (var submodel in submodels)
             {
                 RegisterSubmodelServiceProvider(submodel.Identification.Id, submodel.CreateServiceProvider());
             }
-            ServiceDescriptor = ServiceDescriptor ?? new SubmodelRepositoryDescriptor(boundElement, null);
+            ServiceDescriptor = ServiceDescriptor ?? new SubmodelRepositoryDescriptor(submodels, null);
         }
         public IEnumerable<ISubmodel> GetBinding()
         {
@@ -80,14 +78,15 @@ namespace BaSyx.API.Components
             if (submodel == null)
                 return new Result<ISubmodel>(new ArgumentNullException(nameof(submodel)));
 
-            var createdServiceProvider = _serviceProviderFactory.CreateSubmodelServiceProvider(submodel);
-            RegisterSubmodelServiceProvider(submodel.Identification.Id, createdServiceProvider);
-            
+            var registered = RegisterSubmodelServiceProvider(submodel.Identification.Id, submodel.CreateServiceProvider());
+            if (!registered.Success)
+                return new Result<ISubmodel>(registered);
+
             var retrievedSubmodelServiceProvider = GetSubmodelServiceProvider(submodel.Identification.Id);
             if (retrievedSubmodelServiceProvider.TryGetEntity(out ISubmodelServiceProvider serviceProvider))
                 return new Result<ISubmodel>(true, serviceProvider.GetBinding());
-            
-            return new Result<ISubmodel>(false, new Message(MessageType.Error, "Could not retrieve Submodel Service Provider"));
+            else
+                return new Result<ISubmodel>(false, new Message(MessageType.Error, "Could not retrieve Submodel Service Provider"));
         }
 
         public IResult DeleteSubmodel(string submodelId)

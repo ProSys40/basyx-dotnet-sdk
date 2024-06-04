@@ -88,9 +88,9 @@ namespace BaSyx.API.Components
             BindTo(assetAdministrationShell);
         }
 
-        public virtual void BindTo(IAssetAdministrationShell boundElement)
+        public virtual void BindTo(IAssetAdministrationShell element)
         {
-            _assetAdministrationShell = boundElement;
+            _assetAdministrationShell = element;
             ServiceDescriptor = ServiceDescriptor ?? new AssetAdministrationShellDescriptor(_assetAdministrationShell, null);
         }
         public virtual IAssetAdministrationShell GetBinding()
