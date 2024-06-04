@@ -79,11 +79,11 @@ namespace BaSyx.API.Components
         /// <summary>
         /// Bind this SubmodelServiceProvider to a specific Submodel
         /// </summary>
-        /// <param name="submodel">Submodel object</param>
-        public void BindTo(ISubmodel submodel)
+        /// <param name="boundElement">Submodel object</param>
+        public void BindTo(ISubmodel boundElement)
         {
-            _submodel = submodel;
-            ServiceDescriptor = new SubmodelDescriptor(submodel, null);
+            _submodel = boundElement;
+            ServiceDescriptor = new SubmodelDescriptor(boundElement, null);
         }
 
         /// <summary>
